@@ -4,6 +4,7 @@
 #include "VulkanInstance.hpp"
 #include "VulkanUtilities.hpp"
 #include "MeshBuffer.hpp"
+#include "Graphics.hpp"
 
 namespace Spinner
 {
@@ -135,7 +136,7 @@ namespace Spinner
     void CommandBuffer::BindShaderInstance(const ShaderInstance::Pointer &shaderInstance)
     {
         BindShader(shaderInstance->Shader);
-        BindShaderInstanceDescriptors(shaderInstance);
+        BindShaderInstanceDescriptors(shaderInstance, vk::PipelineBindPoint::eGraphics);
     }
 
     void CommandBuffer::UnbindShaderStage(vk::ShaderStageFlagBits stage)
@@ -183,7 +184,8 @@ namespace Spinner
 
     void CommandBuffer::BindShaderInstanceDescriptors(const ShaderInstance::Pointer &shaderInstance, vk::PipelineBindPoint bindPoint)
     {
-        BindDescriptors(shaderInstance->VkPipelineLayout, 0, shaderInstance->VkDescriptorSets, bindPoint);
+        TrackObject(shaderInstance);
+        BindDescriptors(shaderInstance->VkPipelineLayout, 0, shaderInstance->GetDescriptorSets(Graphics::GetCurrentFrame()), bindPoint);
     }
 
     void CommandBuffer::InsertImageMemoryBarrier(vk::Image image, vk::AccessFlags2 srcAccessMask, vk::AccessFlags2 dstAccessMask, vk::ImageLayout oldImageLayout, vk::ImageLayout newImageLayout, vk::PipelineStageFlags2 srcStageMask, vk::PipelineStageFlags2 dstStageMask, vk::ImageSubresourceRange subresourceRange)

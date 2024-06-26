@@ -6,7 +6,6 @@
 #include "Graphics.hpp"
 #include "Object.hpp"
 #include "Scene.hpp"
-#include "Components/MeshComponent.hpp"
 #include "MeshData/StaticMeshVertex.hpp"
 
 namespace Spinner
@@ -23,15 +22,14 @@ namespace Spinner
         std::shared_ptr<Spinner::Graphics> Graphics;
         std::shared_ptr<Spinner::Scene> Scene;
 
-        std::shared_ptr<Spinner::Components::MeshComponent> MeshComponent;
-
     public:
         void Run();
 
     protected:
         virtual void AppInit();
         virtual void DrawScene(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex);
-        void AppCleanup();
+        virtual void AppCleanup();
+        virtual void AppUpdate();
     };
 
 } // Spinner

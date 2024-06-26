@@ -38,6 +38,8 @@ namespace Spinner
         if (mapped)
         {
             Mapped = Graphics::GetAllocator().mapMemory(VmaAllocation);
+            // Set buffer to 0
+            std::memset(Mapped, 0, BufferSize);
         }
     }
 
@@ -58,7 +60,7 @@ namespace Spinner
         }
     }
 
-    void Buffer::Write(void *data, vk::DeviceSize size, vk::DeviceAddress offset, Spinner::CommandBuffer::Pointer commandBuffer)
+    void Buffer::Write(const void *data, vk::DeviceSize size, vk::DeviceAddress offset, Spinner::CommandBuffer::Pointer commandBuffer)
     {
         assert((size + offset) <= BufferSize);
 

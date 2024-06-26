@@ -6,7 +6,8 @@ _COMPILED_DIR="./Compiled"
 
 mkdir -p $_COMPILED_DIR
 
-_SHADERNAME="$(basename "$(basename "$1" .vert)" ".frag")"
+_FILENAME="$(basename -- "$1")"
+_SHADERNAME=${_FILENAME%.*}
 
 _SHADER_VERT="$_SHADERNAME".vert
 _SHADER_VERT_OUT="$_SHADERNAME"_vert.spv

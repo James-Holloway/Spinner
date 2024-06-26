@@ -21,7 +21,14 @@ namespace Spinner
 
     public:
         /// Writes data to the buffer directly if cpu accessible, otherwise via a staging buffer. Staging requires this buffer to have TransferDst usage flags
-        void Write(void *data, vk::DeviceSize size, vk::DeviceAddress offset = 0, Spinner::CommandBuffer::Pointer commandBuffer = nullptr);
+        void Write(const void *data, vk::DeviceSize size, vk::DeviceAddress offset = 0, Spinner::CommandBuffer::Pointer commandBuffer = nullptr);
+
+        template<typename T>
+        inline void Write(const T &data, Spinner::CommandBuffer::Pointer commandBuffer = nullptr)
+        {
+            Write(reinterpret_cast<const void *>(&data), sizeof(T), 0, commandBuffer);
+        }
+
         /// Copies the buffer to another buffer. Requires this buffer to have TransferSrc and destination buffer to have TransferDst usage flags
         void CopyTo(const Buffer::Pointer &destination, CommandBuffer::Pointer commandBuffer = nullptr);
 

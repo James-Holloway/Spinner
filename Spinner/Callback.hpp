@@ -48,7 +48,7 @@ namespace Spinner
             auto iterEnd = Callbacks.end();
             for (; iter != iterEnd;)
             {
-                if (!iter->second.Unowned && iter->second.Token.lock() == nullptr)
+                if (!iter->second.Unowned && iter->second.Token.expired())
                 {
                     iter = Callbacks.erase(iter);
                 }
@@ -68,7 +68,7 @@ namespace Spinner
             }
 
             CallbackIdType id = ++IdCounter;
-            bool unowned = ownerToken.lock() == nullptr;
+            bool unowned = ownerToken.expired();
             Callbacks.emplace(id, OwnedCallback{callback, ownerToken, unowned});
             return id;
         }
@@ -126,7 +126,7 @@ namespace Spinner
     public:
         inline void SetCallback(FunctionType callback, const CallbackOwnerToken::WeakPointer &ownerToken)
         {
-            bool unowned = ownerToken.lock() == nullptr;
+            bool unowned = ownerToken.expired();
             Callback = OwnedCallback{callback, ownerToken, unowned};
         }
 
@@ -138,7 +138,7 @@ namespace Spinner
 
         inline void Run(Args... args)
         {
-            if (Callback.Callback == nullptr || (!Callback.Unowned && Callback.Token.lock() == nullptr))
+            if (Callback.Callback == nullptr || (!Callback.Unowned && Callback.Token.expired()))
             {
                 // if either are null then clear the token, just in case
                 Callback.Token.reset();

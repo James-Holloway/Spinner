@@ -6,6 +6,7 @@
 #include "Object.hpp"
 #include "DescriptorPool.hpp"
 #include "DescriptorSetLayout.hpp"
+#include "VulkanInstance.hpp"
 
 namespace Spinner
 {
@@ -14,6 +15,8 @@ namespace Spinner
     class CommandBuffer;
 
     class ShaderInstance;
+
+    class Buffer;
 
     struct ShaderCreateInfo
     {
@@ -45,7 +48,7 @@ namespace Spinner
         [[nodiscard]] vk::ShaderEXT GetVkShader() const;
         [[nodiscard]] std::vector<vk::DescriptorSetLayoutBinding> GetDescriptorSetLayoutBindings() const;
         [[nodiscard]] std::vector<vk::PushConstantRange> GetPushConstantRanges() const;
-        [[nodiscard]] const vk::DescriptorSetLayout& GetDescriptorSetLayout() const;
+        [[nodiscard]] const vk::DescriptorSetLayout &GetDescriptorSetLayout() const;
 
     protected:
         std::string ShaderName;
@@ -89,11 +92,15 @@ namespace Spinner
         [[nodiscard]] vk::ShaderStageFlagBits GetShaderStage() const;
         [[nodiscard]] vk::ShaderStageFlags GetNextStage() const;
 
+        [[nodiscard]] std::optional<vk::DescriptorType> GetDescriptorTypeOfBinding(uint32_t binding) const;
+        [[nodiscard]] std::vector<vk::DescriptorSet> GetDescriptorSets(uint32_t currentFrame) const;
+        void UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer) const;
+
     protected:
         Spinner::Shader::Pointer Shader;
         Spinner::DescriptorPool::Pointer DescriptorPool;
         vk::PipelineLayout VkPipelineLayout;
-        std::vector<vk::DescriptorSet> VkDescriptorSets;
+        std::array<std::vector<vk::DescriptorSet>, MAX_FRAMES_IN_FLIGHT> VkDescriptorSets;
 
     public:
         static Pointer CreateInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool);

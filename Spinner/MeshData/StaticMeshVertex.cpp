@@ -2,26 +2,79 @@
 
 namespace Spinner::MeshData
 {
+    Shader::Pointer StaticMeshVertex::VertexShader;
+    Shader::Pointer StaticMeshVertex::FragmentShader;
+    DescriptorPool::Pointer StaticMeshVertex::DescriptorPool;
+
     std::vector<VertexAttribute> StaticMeshVertex::GetVertexAttributes()
     {
         return std::vector<VertexAttribute>{
                 VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Position)), // vec3 Position
+                VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Normal)), // vec3 Normal
+                VertexAttribute::CreateVec4(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Tangent)), // vec3 Tangent
                 VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Color)), // vec3 Color
-                VertexAttribute::CreateVec2(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, UV)) // vec2 UV
+                VertexAttribute::CreateVec2(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, UV)), // vec2 UV
         };
+    }
+
+    size_t StaticMeshVertex::GetStride()
+    {
+        return sizeof(StaticMeshVertex);
     }
 
     MeshBuilder StaticMeshVertex::CreateMeshBuilder()
     {
-        return MeshBuilder(GetVertexAttributes());
+        return MeshBuilder(GetVertexAttributes(), GetStride());
+    }
+
+    std::vector<vk::DescriptorSetLayoutBinding> StaticMeshVertex::GetDescriptorSetLayoutBindings()
+    {
+        return std::vector<vk::DescriptorSetLayoutBinding>{
+                vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
+                vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
+        };
+    }
+
+    void StaticMeshVertex::CreateShaders()
+    {
+        // Descriptor Pool
+        DescriptorPool = DescriptorPool::CreateDefault();
+
+        // Descriptor Set Layout and push constants
+        auto descriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(GetDescriptorSetLayoutBindings(), {});
+
+        // Shader creation
+        ShaderCreateInfo vertexShaderCreateInfo;
+        vertexShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eVertex;
+        vertexShaderCreateInfo.ShaderName = "staticmesh";
+        vertexShaderCreateInfo.NextStage = vk::ShaderStageFlagBits::eFragment;
+        vertexShaderCreateInfo.DescriptorSetLayout = descriptorSetLayout;
+
+        ShaderCreateInfo fragmentShaderCreateInfo;
+        fragmentShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eFragment;
+        fragmentShaderCreateInfo.ShaderName = "staticmesh";
+        fragmentShaderCreateInfo.NextStage = {};
+        fragmentShaderCreateInfo.DescriptorSetLayout = descriptorSetLayout;
+
+        auto shaders = Shader::CreateLinkedShaders({vertexShaderCreateInfo, fragmentShaderCreateInfo});
+
+        VertexShader = shaders[0];
+        FragmentShader = shaders[1];
+    }
+
+    void StaticMeshVertex::DestroyShaders()
+    {
+        FragmentShader.reset();
+        VertexShader.reset();
+        DescriptorPool.reset();
     }
 
     MeshBuffer::Pointer StaticMeshVertex::CreateTestTriangle()
     {
         std::vector<StaticMeshVertex> vertices{
-                {{-0.5f, 0.5f, 0.0f}, {1, 0, 0}, {0.0f, 0.0f}}, // bottom left
-                {{0.5f,  0.5f, 0.0f}, {0, 1, 0}, {1.0f, 0.0f}}, // bottom right
-                {{0.0f,  -0.5f,  0.0f}, {0, 0, 1}, {0.5f, 0.5f}}, // top middle
+                {{-0.5f, 0.5f,  0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {1, 0, 0}, {0.0f, 0.0f}}, // bottom left
+                {{0.5f,  0.5f,  0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {0, 1, 0}, {1.0f, 0.0f}}, // bottom right
+                {{0.0f,  -0.5f, 0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {0, 0, 1}, {0.5f, 0.5f}}, // top middle
         };
 
         std::vector<MeshBuffer::IndexType> indices{

@@ -1,0 +1,6 @@
+[submodule "ThirdParty/tinygltf"]
+	path = ThirdParty/tinygltf
+	url = https://github.com/syoyo/tinygltf
+[submodule "ThirdParty/VulkanMemoryAllocator-Hpp"]
+	path = ThirdParty/VulkanMemoryAllocator-Hpp
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp

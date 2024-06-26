@@ -54,7 +54,7 @@ namespace Spinner
     class MeshBuilder
     {
     public:
-        explicit MeshBuilder(const std::vector<VertexAttribute> &attributes);
+        explicit MeshBuilder(const std::vector<VertexAttribute> &attributes, size_t stride = 0);
 
     public:
         MeshBuilder &SetVertexData(const void *data, uint32_t vertexCount);

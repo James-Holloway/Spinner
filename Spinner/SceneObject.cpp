@@ -51,6 +51,8 @@ namespace Spinner
         SetWorldMatrixDirty();
         SetSceneParentDirty();
 
+        ParentChanged.Run(sharedThis, GetSceneParent());
+
         return true;
     }
 
@@ -116,7 +118,7 @@ namespace Spinner
 
     void SceneObject::ConstructMatrix()
     {
-        Matrix = glm::translate({}, Position) * glm::mat4_cast(Rotation) * glm::scale({}, Scale);
+        Matrix = glm::translate(glm::mat4{1.0f}, Position) * glm::mat4_cast(Rotation) * glm::scale(glm::mat4{1.0f}, Scale);
         DirtyMatrix = false;
     }
 
@@ -124,7 +126,7 @@ namespace Spinner
     {
         if (IsScene)
         {
-            WorldMatrix = glm::mat4{};
+            WorldMatrix = glm::mat4{1.0f};
         }
         else if (GetParent() != nullptr)
         {
@@ -142,6 +144,11 @@ namespace Spinner
 
     glm::mat4 SceneObject::GetLocalMatrix()
     {
+        if (DirtyMatrix)
+        {
+            ConstructMatrix();
+        }
+
         return Matrix;
     }
 
@@ -158,6 +165,35 @@ namespace Spinner
     glm::vec3 SceneObject::GetLocalScale()
     {
         return Scale;
+    }
+
+    void SceneObject::SetLocalPosition(glm::vec3 position)
+    {
+        Position = position;
+    }
+
+    void SceneObject::SetLocalRotation(glm::quat rotation)
+    {
+        Rotation = rotation;
+    }
+
+    void SceneObject::SetLocalScale(glm::vec3 scale)
+    {
+        Scale = scale;
+    }
+
+    void SceneObject::SetLocalMatrix(glm::mat4 matrix)
+    {
+        glm::vec3 position, scale, skew;
+        glm::quat rotation;
+        glm::vec4 perspective;
+        glm::decompose(matrix, scale, rotation, position, skew, perspective);
+        Position = position;
+        Rotation = rotation;
+        Scale = scale;
+
+        DirtyMatrix = true;
+        SetWorldMatrixDirty();
     }
 
     glm::mat4 SceneObject::GetWorldMatrix()
@@ -179,5 +215,139 @@ namespace Spinner
 
         return InverseWorldMatrix;
     }
+
+    glm::vec3 SceneObject::GetWorldPosition()
+    {
+        glm::vec3 position, scale, skew;
+        glm::quat rotation;
+        glm::vec4 perspective;
+        glm::decompose(GetWorldMatrix(), scale, rotation, position, skew, perspective);
+        return position;
+    }
+
+    glm::quat SceneObject::GetWorldRotation()
+    {
+        glm::vec3 position, scale, skew;
+        glm::quat rotation;
+        glm::vec4 perspective;
+        glm::decompose(GetWorldMatrix(), scale, rotation, position, skew, perspective);
+        return rotation;
+    }
+
+    glm::vec3 SceneObject::GetWorldScale()
+    {
+        glm::vec3 position, scale, skew;
+        glm::quat rotation;
+        glm::vec4 perspective;
+        glm::decompose(GetWorldMatrix(), scale, rotation, position, skew, perspective);
+        return scale;
+    }
+
+    bool SceneObject::HasComponent(Components::ComponentId componentId)
+    {
+        for (const auto &component : Components)
+        {
+            if (component->GetComponentId() == componentId)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    size_t SceneObject::ComponentCount(Components::ComponentId componentId)
+    {
+        size_t count = 0;
+        for (const auto &component : Components)
+        {
+            if (component->GetComponentId() == componentId)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    void SceneObject::Traverse(const std::function<bool(const SceneObject::Pointer &)> &traverseFunction, const std::function<void(const SceneObject::Pointer &)> &traverseUpFunction, int maxDepth, int currentDepth)
+    {
+        if (traverseFunction == nullptr)
+            return;
+
+        if (!IsScene)
+        {
+            bool result = traverseFunction(shared_from_this());
+            if (!result)
+                return;
+        }
+
+        if (currentDepth >= maxDepth)
+            return;
+
+        for (auto &child : Children)
+        {
+            child->Traverse(traverseFunction, traverseUpFunction, maxDepth, currentDepth + 1);
+        }
+
+        if (!IsScene && traverseUpFunction)
+        {
+            traverseUpFunction(shared_from_this());
+        }
+    }
+
+    void SceneObject::TraverseActive(const std::function<bool(const SceneObject::Pointer &)> &traverseFunction, const std::function<void(const SceneObject::Pointer &)> &traverseUpFunction, int maxDepth, int currentDepth)
+    {
+        if (traverseFunction == nullptr)
+            return;
+
+        if (!IsScene && IsActive())
+        {
+            bool result = traverseFunction(shared_from_this());
+            if (!result)
+                return;
+        }
+
+        if (currentDepth >= maxDepth && maxDepth > 0)
+            return;
+
+        for (auto &child : Children)
+        {
+            child->TraverseActive(traverseFunction, traverseUpFunction, maxDepth, currentDepth + 1);
+        }
+
+        if (!IsScene && traverseUpFunction)
+        {
+            traverseUpFunction(shared_from_this());
+        }
+    }
+
+    std::shared_ptr<Scene> SceneObject::GetSceneParent()
+    {
+        if (IsScene)
+        {
+            return SceneParent.lock();
+        }
+        if (!DirtySceneParent)
+        {
+            return SceneParent.lock();
+        }
+
+        auto parent = GetParent();
+        if (parent == nullptr)
+        {
+            return nullptr;
+        }
+
+        auto scene = parent->GetSceneParent();
+        DirtySceneParent = false;
+        SceneParent = scene;
+        return scene;
+    }
+
+    SceneObject::Pointer SceneObject::Create(std::string name)
+    {
+        return std::make_shared<Spinner::SceneObject>(name);
+    }
+
 
 } // Spinner

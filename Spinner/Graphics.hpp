@@ -78,6 +78,8 @@ namespace Spinner
         [[nodiscard]] static std::vector<CommandBuffer::Pointer> CreateCommandBuffers(uint32_t count, bool secondary);
         [[nodiscard]] static CommandBuffer::Pointer BeginSingleTimeCommands();
         static void EndSingleTimeCommands(const CommandBuffer::Pointer& commandBuffer);
+
+        static uint32_t GetCurrentFrame();
     };
 
 } // Spinner

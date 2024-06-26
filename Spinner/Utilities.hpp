@@ -61,10 +61,10 @@ namespace Spinner
                 assetName = "Shaders/Compiled/" + assetName;
                 break;
             case AssetType::Model:
-                assetName = "Model/" + assetName;
+                assetName = "Models/" + assetName;
                 break;
             case AssetType::Texture:
-                assetName = "Texture/" + assetName;
+                assetName = "Textures/" + assetName;
                 break;
         }
 

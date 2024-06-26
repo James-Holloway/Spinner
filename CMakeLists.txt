@@ -11,6 +11,8 @@ find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED 3.4)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
+add_subdirectory(ThirdParty/tinygltf)
+
 add_library(Spinner OBJECT
         Spinner/Graphics.cpp
         Spinner/Graphics.hpp
@@ -32,6 +34,7 @@ add_library(Spinner OBJECT
         Spinner/SceneObject.hpp
         Spinner/GLM.hpp
         Spinner/Utilities.hpp
+        Spinner/Components/Component.cpp
         Spinner/Components/Component.hpp
         Spinner/Components/MeshComponent.cpp
         Spinner/Components/MeshComponent.hpp
@@ -56,8 +59,11 @@ add_library(Spinner OBJECT
         Spinner/Extra/AlignedAllocator.hpp
         Spinner/DescriptorSetLayout.cpp
         Spinner/DescriptorSetLayout.hpp
+        Spinner/Constants.hpp
+        Spinner/Components/CameraComponent.cpp
+        Spinner/Components/CameraComponent.hpp
 )
-target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator)
+target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf)
 
 add_executable(SpinnerTestApp
         main.cpp

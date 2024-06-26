@@ -552,4 +552,10 @@ namespace Spinner
     {
         return GraphicsInstance->Swapchain->GetSwapchainExtent();
     }
+
+    uint32_t Graphics::GetCurrentFrame()
+    {
+        return GraphicsInstance->CurrentFrame;
+    }
+
 } // Spinner

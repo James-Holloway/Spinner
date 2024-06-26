@@ -1,6 +1,8 @@
 #include "App.hpp"
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "Components/MeshComponent.hpp"
+#include "Components/CameraComponent.hpp"
 
 namespace Spinner
 {
@@ -60,6 +62,8 @@ namespace Spinner
             {
                 Window::PollEvents();
 
+                AppUpdate();
+
                 Graphics->DrawFrame();
             }
         }
@@ -74,40 +78,27 @@ namespace Spinner
         // Scene
         Scene = std::make_shared<Spinner::Scene>("Main Scene");
 
-        // Descriptor Pool
-        auto descriptorPool = DescriptorPool::CreateDefault();
-        Scene->SetDescriptorPool(descriptorPool);
+        MeshData::StaticMeshVertex::CreateShaders();
 
-        // Descriptor Set Layout (empty)
-        auto descriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout({}, {});
+        auto suzanneObject = Scene::LoadModel("suzanne.glb");
 
-        // Shader creation
-        ShaderCreateInfo vertexShaderCreateInfo;
-        vertexShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eVertex;
-        vertexShaderCreateInfo.ShaderName = "test";
-        vertexShaderCreateInfo.NextStage = vk::ShaderStageFlagBits::eFragment;
-        vertexShaderCreateInfo.DescriptorSetLayout = descriptorSetLayout;
+        if (!Scene->AddObjectToScene(suzanneObject))
+        {
+            throw std::runtime_error("Suzanne was unable to be loaded");
+        }
 
-        ShaderCreateInfo fragmentShaderCreateInfo;
-        fragmentShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eFragment;
-        fragmentShaderCreateInfo.ShaderName = "test";
-        fragmentShaderCreateInfo.NextStage = {};
-        fragmentShaderCreateInfo.DescriptorSetLayout = descriptorSetLayout;
+        auto cameraObject = SceneObject::Create("Main Camera");
+        auto camera = cameraObject->AddComponent<Components::CameraComponent>();
+        camera->SetActiveCamera();
+        cameraObject->SetLocalPosition({0, 0, 5});
+        cameraObject->SetLocalMatrix(glm::inverse(glm::lookAt(cameraObject->GetLocalPosition(), {0, 0, 0}, {0, 1, 0})));
 
-        auto shaders = Shader::CreateLinkedShaders({vertexShaderCreateInfo, fragmentShaderCreateInfo});
-
-        // Create test triangle
-        auto triangle = MeshData::StaticMeshVertex::CreateTestTriangle();
-        // Create a testing mesh component
-        MeshComponent = std::make_shared<Components::MeshComponent>();
-        MeshComponent->SetMeshBuffer(triangle);
-        // Create and set shader instances
-        MeshComponent->PopulateFromShaders(shaders[0], shaders[1], descriptorPool);
+        Scene->AddObjectToScene(cameraObject);
     }
 
     void App::AppCleanup()
     {
-        MeshComponent.reset();
+        MeshData::StaticMeshVertex::DestroyShaders();
     }
 
     void App::DrawScene(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex)
@@ -137,11 +128,16 @@ namespace Spinner
 
         commandBuffer->BeginRendering(renderingInfo, Graphics::GetSwapchainExtent());
 
-        MeshComponent->Draw(commandBuffer);
+        Scene->Draw(commandBuffer);
 
         commandBuffer->EndRendering();
 
         // Transition color image for presentation
         commandBuffer->InsertImageMemoryBarrier(swapchainImage, vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
+    }
+
+    void App::AppUpdate()
+    {
+        Scene->Update(Graphics->CurrentFrame);
     }
 } // Spinner

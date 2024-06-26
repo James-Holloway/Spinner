@@ -2,6 +2,7 @@
 
 #include "Utilities.hpp"
 #include "Graphics.hpp"
+#include "Buffer.hpp"
 
 namespace Spinner
 {
@@ -151,7 +152,7 @@ namespace Spinner
         return DescriptorSetLayout->GetPushConstantRanges();
     }
 
-    const vk::DescriptorSetLayout& Shader::GetDescriptorSetLayout() const
+    const vk::DescriptorSetLayout &Shader::GetDescriptorSetLayout() const
     {
         return DescriptorSetLayout->GetDescriptorSetLayout();
     }
@@ -186,10 +187,13 @@ namespace Spinner
     {
         auto &device = Graphics::GetDevice();
 
-        if (!VkDescriptorSets.empty())
+        for (auto &sets : VkDescriptorSets)
         {
-            DescriptorPool->FreeDescriptorSets(VkDescriptorSets);
-            VkDescriptorSets.clear();
+            if (!sets.empty())
+            {
+                DescriptorPool->FreeDescriptorSets(sets);
+            }
+            sets.clear();
         }
 
         if (VkPipelineLayout)
@@ -224,6 +228,23 @@ namespace Spinner
         return *this;
     }
 
+    void ShaderInstance::CreateDescriptors()
+    {
+        auto pushConstantRanges = Shader->GetPushConstantRanges();
+
+        // Pipeline layout
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+        pipelineLayoutCreateInfo.setSetLayouts(Shader->GetDescriptorSetLayout());
+        pipelineLayoutCreateInfo.setPushConstantRanges(pushConstantRanges);
+        VkPipelineLayout = Graphics::GetDevice().createPipelineLayout(pipelineLayoutCreateInfo);
+
+        // Descriptor Sets
+        for (auto &sets : VkDescriptorSets)
+        {
+            sets = DescriptorPool->AllocateDescriptorSets(Shader);
+        }
+    }
+
     vk::ShaderStageFlagBits ShaderInstance::GetShaderStage() const
     {
         return Shader->ShaderStage;
@@ -234,26 +255,50 @@ namespace Spinner
         return Shader->NextStage;
     }
 
-    void ShaderInstance::CreateDescriptors()
+    std::vector<vk::DescriptorSet> ShaderInstance::GetDescriptorSets(uint32_t currentFrame) const
     {
-        auto &device = Graphics::GetDevice();
+        return VkDescriptorSets.at(currentFrame);
+    }
 
-        auto pushConstantRanges = Shader->GetPushConstantRanges();
+    std::optional<vk::DescriptorType> ShaderInstance::GetDescriptorTypeOfBinding(uint32_t binding) const
+    {
+        auto layoutBindings = Shader->GetDescriptorSetLayoutBindings();
 
-        // Pipeline layout
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-        pipelineLayoutCreateInfo.setSetLayouts(Shader->GetDescriptorSetLayout());
-        pipelineLayoutCreateInfo.setPushConstantRanges(pushConstantRanges);
-        VkPipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
+        for (const vk::DescriptorSetLayoutBinding &layoutBinding : layoutBindings)
+        {
+            if (layoutBinding.binding == binding)
+            {
+                return {layoutBinding.descriptorType};
+            }
+        }
 
-        // Descriptor Sets
-        vk::DescriptorSetAllocateInfo allocateInfo;
-        allocateInfo.descriptorPool = DescriptorPool->VkDescriptorPool;
-        allocateInfo.setSetLayouts(Shader->GetDescriptorSetLayout());
-        VkDescriptorSets = device.allocateDescriptorSets(allocateInfo);
+        return {};
+    }
 
-        DescriptorPool->AllocateDescriptorSets(Shader);
-        DescriptorPool->AllocateDescriptorSets(Shader->GetDescriptorSetLayout());
+    void ShaderInstance::UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer) const
+    {
+        auto descriptorType = GetDescriptorTypeOfBinding(binding);
+        if (!descriptorType.has_value())
+        {
+            throw std::runtime_error("Cannot get binding type from Shader's descriptor set layout bindings, binding #" + std::to_string(binding));
+        }
+
+        auto sets = GetDescriptorSets(currentFrame);
+
+        vk::DescriptorBufferInfo bufferInfo;
+        bufferInfo.buffer = buffer->VkBuffer;
+        bufferInfo.offset = 0;
+        bufferInfo.range = vk::WholeSize;
+
+        vk::WriteDescriptorSet writeDescriptorSet;
+        writeDescriptorSet.dstSet = sets.at(0); // WARNING: only one set is bound currently (check CreateDescriptors)
+        writeDescriptorSet.dstBinding = binding;
+        writeDescriptorSet.dstArrayElement = 0;
+        writeDescriptorSet.descriptorType = descriptorType.value();
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.pBufferInfo = &bufferInfo;
+
+        Graphics::GetDevice().updateDescriptorSets(writeDescriptorSet, nullptr);
     }
 
     ShaderInstance::Pointer ShaderInstance::CreateInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool)

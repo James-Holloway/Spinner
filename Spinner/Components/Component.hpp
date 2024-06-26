@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 #include <type_traits>
+#include <concepts>
 #include "../Object.hpp"
 
 namespace Spinner
@@ -12,24 +13,61 @@ namespace Spinner
 
     namespace Components
     {
-        class Component : public Object
-        {
-        protected:
-            std::weak_ptr<Spinner::SceneObject> SceneObject;
-
-        public:
-            inline std::weak_ptr<Spinner::SceneObject> GetSceneObject()
-            {
-                return SceneObject;
-            }
-        };
-
         using ComponentId = int64_t;
 
+        class ComponentError : public std::exception
+        {
+        public:
+            inline explicit ComponentError(const std::string &text) : Text("Spinner ComponentError: " + text)
+            {};
+
+            [[nodiscard]] const char *what() const noexcept override
+            {
+                return Text.c_str();
+            }
+
+        protected:
+            std::string Text;
+        };
+
+        class Component : public Object
+        {
+        public:
+            using Pointer = std::unique_ptr<Component>;
+
+            explicit Component(const std::weak_ptr<Spinner::SceneObject> &sceneObject, ComponentId componentId, int64_t componentIndex);
+
+        protected:
+            std::weak_ptr<Spinner::SceneObject> SceneObject{};
+            const Spinner::Components::ComponentId ComponentId = -1;
+            const int64_t ComponentIndex = -1;
+            std::string Name;
+            bool Active = true;
+
+        public:
+            [[nodiscard]] std::weak_ptr<Spinner::SceneObject> GetSceneObjectWeak() const;
+            [[nodiscard]] std::shared_ptr<Spinner::SceneObject> GetSceneObject() const;
+            [[nodiscard]] bool GetActive() const noexcept;
+            void SetActive(bool active) noexcept;
+            [[nodiscard]] Components::ComponentId GetComponentId() const noexcept;
+            [[nodiscard]] int64_t GetComponentIndex() const noexcept;
+            [[nodiscard]] std::string GetComponentName() const noexcept;
+            void SetComponentName(const std::string& name) noexcept;
+        };
+
         template<typename T>
-        inline ComponentId GetComponentId()
+        concept IsComponent = std::derived_from<T, Spinner::Components::Component>;
+
+        template<IsComponent T>
+        inline constexpr ComponentId GetComponentId()
         {
             return -1;
+        }
+
+        template<IsComponent T>
+        inline const char *GetComponentName()
+        {
+            return "Component";
         }
     }
 }

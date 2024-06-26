@@ -10,7 +10,7 @@ namespace Spinner
     {
         // Descriptor pool
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+        descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
         descriptorPoolCreateInfo.setMaxSets(MaxSets);
         descriptorPoolCreateInfo.setPoolSizes(Sizes);
         VkDescriptorPool = Graphics::GetDevice().createDescriptorPool(descriptorPoolCreateInfo);

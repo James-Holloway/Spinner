@@ -11,6 +11,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/ext/matrix_common.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/color_space.hpp>

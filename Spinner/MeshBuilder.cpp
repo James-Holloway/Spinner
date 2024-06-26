@@ -5,7 +5,7 @@
 namespace Spinner
 {
 
-    MeshBuilder::MeshBuilder(const std::vector<VertexAttribute> &attributes) : Attributes(attributes)
+    MeshBuilder::MeshBuilder(const std::vector<VertexAttribute> &attributes, size_t stride) : Attributes(attributes)
     {
         uint32_t attributeIndex = 0;
         uint32_t attributeOffset = 0;
@@ -31,7 +31,7 @@ namespace Spinner
             attributeOffset += VkFormatByteWidth(attribute.Format);
         }
 
-        Stride = attributeOffset;
+        Stride = (stride != 0) ? stride : attributeOffset;
 
         VertexData.resize(Attributes.size());
     }
