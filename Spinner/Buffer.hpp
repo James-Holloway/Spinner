@@ -10,6 +10,7 @@
 
 namespace Spinner
 {
+    class Image;
 
     class Buffer : public std::enable_shared_from_this<Buffer>
     {
@@ -31,6 +32,9 @@ namespace Spinner
 
         /// Copies the buffer to another buffer. Requires this buffer to have TransferSrc and destination buffer to have TransferDst usage flags
         void CopyTo(const Buffer::Pointer &destination, CommandBuffer::Pointer commandBuffer = nullptr);
+
+        /// Copies the buffer to the specified image. Requires this buffer to have TransferSrc and destination image to have TransferDst usage flags
+        void CopyToImage(const std::shared_ptr<Image> &image, vk::ImageAspectFlags imageAspectFlags = vk::ImageAspectFlagBits::eColor, CommandBuffer::Pointer commandBuffer = nullptr, std::optional<vk::ImageSubresourceLayers> subresourceLayers = {}, std::optional<vk::ImageSubresourceRange> subresourceRange = {});
 
     public:
         vk::Buffer VkBuffer;

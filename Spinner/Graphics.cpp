@@ -583,4 +583,38 @@ namespace Spinner
         return MainWindow->GetSurface();
     }
 
+    uint32_t Graphics::GetGraphicsQueueFamilyIndex()
+    {
+        return GraphicsInstance->GetGraphicsQueueFamily();
+    }
+
+    vk::Format Graphics::FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features)
+    {
+        for (vk::Format format : candidates)
+        {
+            vk::FormatProperties props = PhysicalDevice.getFormatProperties(format);
+
+            if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
+            {
+                return format;
+            }
+            else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features)
+            {
+                return format;
+            }
+        }
+
+        throw std::runtime_error("failed to find supported format!");
+    }
+
+    vk::Format Graphics::FindDepthFormat(bool highQuality)
+    {
+        if (highQuality)
+        {
+            return FindSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint, vk::Format::eD24UnormS8Uint, vk::Format::eD16Unorm, vk::Format::eD16UnormS8Uint}, vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+        }
+        return FindSupportedFormat({vk::Format::eD24UnormS8Uint, vk::Format::eD16Unorm, vk::Format::eD16UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint}, vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    }
+
+
 } // Spinner

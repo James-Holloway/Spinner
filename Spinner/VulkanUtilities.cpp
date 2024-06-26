@@ -82,4 +82,9 @@ namespace Spinner
                 return 32;
         }
     }
+
+    bool VkFormatHasStencilComponent(vk::Format format)
+    {
+        return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint || format == vk::Format::eD16UnormS8Uint || format == vk::Format::eS8Uint;
+    }
 } // Spinner

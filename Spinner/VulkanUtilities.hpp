@@ -6,6 +6,7 @@
 namespace Spinner
 {
     size_t VkFormatByteWidth(vk::Format format);
+    bool VkFormatHasStencilComponent(vk::Format format);
 
     template<typename T>
     inline vk::IndexType GetVkIndexType()

@@ -6,8 +6,9 @@
 #include "Graphics.hpp"
 #include "Object.hpp"
 #include "Scene.hpp"
-#include "MeshData/StaticMeshVertex.hpp"
 #include "ImGuiInstance.hpp"
+#include "Image.hpp"
+#include "VulkanUtilities.hpp"
 
 namespace Spinner
 {
@@ -25,6 +26,7 @@ namespace Spinner
         Spinner::ImGuiInstance::Pointer ImGuiInstance;
 
         Spinner::SceneObject::WeakPointer CameraObject;
+        Spinner::Image::Pointer DepthImage;
 
     public:
         void Run();
@@ -34,6 +36,7 @@ namespace Spinner
         virtual void DrawScene(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex);
         virtual void AppCleanup();
         virtual void AppUpdate();
+        void RecreateDepthImage();
     };
 
 } // Spinner

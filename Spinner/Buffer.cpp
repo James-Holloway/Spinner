@@ -2,6 +2,7 @@
 
 #include "Graphics.hpp"
 #include <cstring>
+#include "Image.hpp"
 
 namespace Spinner
 {
@@ -107,9 +108,9 @@ namespace Spinner
 
     void Buffer::CopyTo(const Buffer::Pointer &destination, CommandBuffer::Pointer commandBuffer)
     {
-        // Ensure destination buffer can be transferred to
+        // Ensure we can transfer from this
         assert(static_cast<vk::BufferUsageFlags::MaskType>(BufferUsageFlags & vk::BufferUsageFlagBits::eTransferDst) != 0);
-        // And that we can transfer from this
+        // And destination buffer can be transferred to
         assert(static_cast<vk::BufferUsageFlags::MaskType>(destination->BufferUsageFlags & vk::BufferUsageFlagBits::eTransferSrc) != 0);
         // And that this buffer's size fits in other's size
         assert(BufferSize <= destination->BufferSize);
@@ -139,6 +140,50 @@ namespace Spinner
     Buffer::Pointer Buffer::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usageFlags, vma::MemoryUsage memoryUsage, vk::DeviceSize alignment, bool mapped)
     {
         return std::make_shared<Buffer>(size, usageFlags, memoryUsage, alignment, mapped);
+    }
+
+    void Buffer::CopyToImage(const std::shared_ptr<Image> &image, vk::ImageAspectFlags imageAspectFlags, CommandBuffer::Pointer commandBuffer, std::optional<vk::ImageSubresourceLayers> subresourceLayers, std::optional<vk::ImageSubresourceRange> subresourceRange)
+    {
+        // Ensure we can transfer from this
+        assert(static_cast<vk::BufferUsageFlags::MaskType>(BufferUsageFlags & vk::BufferUsageFlagBits::eTransferDst) != 0);
+        // And destination image can be transferred to
+        assert(static_cast<vk::BufferUsageFlags::MaskType>(image->ImageUsageFlags & vk::ImageUsageFlagBits::eTransferSrc) != 0);
+        // And that this buffer's size fits in image's size
+        assert(BufferSize <= image->GetImageSize());
+
+        if (!subresourceLayers.has_value())
+        {
+            subresourceLayers = vk::ImageSubresourceLayers(imageAspectFlags, 0, 0, 1);
+        }
+
+        bool singleTime = false;
+        if (commandBuffer == nullptr)
+        {
+            commandBuffer = Graphics::BeginSingleTimeCommands();
+            singleTime = true;
+        }
+
+        vk::BufferImageCopy region;
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+        region.imageExtent = image->GetExtent();
+        region.imageOffset = vk::Offset3D(0, 0, 0);
+        region.imageSubresource = subresourceLayers.value();
+
+        commandBuffer->TrackObject(shared_from_this());
+        commandBuffer->TrackObject(image);
+
+        auto oldImageLayout = image->GetCurrentImageLayout();
+        auto vkImage = image->GetImage();
+        commandBuffer->TransitionImageLayout(image, vk::ImageLayout::eTransferDstOptimal, imageAspectFlags, vk::PipelineStageFlagBits2::eAllCommands, vk::PipelineStageFlagBits2::eAllCommands, subresourceRange);
+        commandBuffer->CopyBufferToImage(VkBuffer, vkImage, image->CurrentImageLayout, region);
+        commandBuffer->TransitionImageLayout(image, oldImageLayout, imageAspectFlags, vk::PipelineStageFlagBits2::eAllCommands, vk::PipelineStageFlagBits2::eAllCommands, subresourceRange);
+
+        if (singleTime)
+        {
+            Graphics::EndSingleTimeCommands(commandBuffer);
+        }
     }
 
 } // Spinner

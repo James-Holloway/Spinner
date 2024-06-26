@@ -73,18 +73,20 @@ namespace Spinner
         vk::Queue GetGraphicsQueue();
         uint32_t GetGraphicsQueueFamily();
         Spinner::Swapchain* GetSwapchainRawPointer();
-        vk::SurfaceKHR GetMainSurface();
+        static uint32_t GetCurrentFrame();
+        vk::Format FindSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+        vk::Format FindDepthFormat(bool highQuality = false);
 
+        vk::SurfaceKHR GetMainSurface();
         [[nodiscard]] static const vk::PhysicalDevice &GetPhysicalDevice();
         [[nodiscard]] static const vk::Device &GetDevice();
         [[nodiscard]] static const vma::Allocator &GetAllocator();
-        [[nodiscard]] static vk::Extent2D GetSwapchainExtent();
 
+        [[nodiscard]] static vk::Extent2D GetSwapchainExtent();
         [[nodiscard]] static std::vector<CommandBuffer::Pointer> CreateCommandBuffers(uint32_t count, bool secondary);
         [[nodiscard]] static CommandBuffer::Pointer BeginSingleTimeCommands();
         static void EndSingleTimeCommands(const CommandBuffer::Pointer& commandBuffer);
-
-        static uint32_t GetCurrentFrame();
+        [[nodiscard]] static uint32_t GetGraphicsQueueFamilyIndex();
     };
 
 } // Spinner
