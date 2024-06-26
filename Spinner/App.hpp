@@ -7,6 +7,7 @@
 #include "Object.hpp"
 #include "Scene.hpp"
 #include "MeshData/StaticMeshVertex.hpp"
+#include "ImGuiInstance.hpp"
 
 namespace Spinner
 {
@@ -20,7 +21,10 @@ namespace Spinner
     protected:
         std::shared_ptr<Spinner::Window> MainWindow;
         std::shared_ptr<Spinner::Graphics> Graphics;
-        std::shared_ptr<Spinner::Scene> Scene;
+        Spinner::Scene::Pointer Scene;
+        Spinner::ImGuiInstance::Pointer ImGuiInstance;
+
+        Spinner::SceneObject::WeakPointer CameraObject;
 
     public:
         void Run();

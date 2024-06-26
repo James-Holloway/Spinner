@@ -69,6 +69,11 @@ namespace Spinner
     public:
         static QueueFamilyIndices FindQueueFamilies(const vk::PhysicalDevice &physicalDevice, const vk::SurfaceKHR &surface);
         void DrawFrame();
+        std::shared_ptr<Spinner::Window> GetMainWindow();
+        vk::Queue GetGraphicsQueue();
+        uint32_t GetGraphicsQueueFamily();
+        Spinner::Swapchain* GetSwapchainRawPointer();
+        vk::SurfaceKHR GetMainSurface();
 
         [[nodiscard]] static const vk::PhysicalDevice &GetPhysicalDevice();
         [[nodiscard]] static const vk::Device &GetDevice();

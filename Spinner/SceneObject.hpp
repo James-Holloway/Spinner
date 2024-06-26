@@ -192,7 +192,7 @@ namespace Spinner
             {
                 return {};
             }
-            return {ptr};
+            return {Components::ComponentPtr<T>(shared_from_this(), ptr->GetComponentIndex())};
         }
 
         template<Components::IsComponent T>

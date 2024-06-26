@@ -169,21 +169,36 @@ namespace Spinner
 
     void SceneObject::SetLocalPosition(glm::vec3 position)
     {
+        if (IsScene)
+            return;
         Position = position;
+        DirtyMatrix = true;
+        SetWorldMatrixDirty();
     }
 
     void SceneObject::SetLocalRotation(glm::quat rotation)
     {
+        if (IsScene)
+            return;
         Rotation = rotation;
+        DirtyMatrix = true;
+        SetWorldMatrixDirty();
     }
 
     void SceneObject::SetLocalScale(glm::vec3 scale)
     {
+        if (IsScene)
+            return;
         Scale = scale;
+        DirtyMatrix = true;
+        SetWorldMatrixDirty();
     }
 
     void SceneObject::SetLocalMatrix(glm::mat4 matrix)
     {
+        if (IsScene)
+            return;
+
         glm::vec3 position, scale, skew;
         glm::quat rotation;
         glm::vec4 perspective;

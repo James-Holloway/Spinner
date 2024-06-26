@@ -117,6 +117,7 @@ namespace Spinner
         {
             imageCount = details.Capabilities.maxImageCount;
         }
+        ImageCount = imageCount;
 
         vk::SwapchainCreateInfoKHR createInfo;
         createInfo.surface = surface;
@@ -203,5 +204,15 @@ namespace Spinner
             throw std::runtime_error("Cannot get an image index larger than the size of SwapchainImageViews");
         }
         return SwapchainImageViews[imageIndex];
+    }
+
+    uint32_t Swapchain::GetImageCount() const
+    {
+        return ImageCount;
+    }
+
+    vk::Format Swapchain::GetImageFormat() const
+    {
+        return SwapchainImageFormat;
     }
 } // Spinner

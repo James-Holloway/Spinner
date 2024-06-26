@@ -33,6 +33,11 @@ namespace Spinner
 
     App::~App()
     {
+        if (Graphics != nullptr)
+        {
+            Graphics::GetDevice().waitIdle();
+        }
+
         AppCleanup();
 
         Scene.reset();
@@ -53,7 +58,6 @@ namespace Spinner
 
     void App::Run()
     {
-
         try
         {
             AppInit();
@@ -75,6 +79,9 @@ namespace Spinner
 
     void App::AppInit()
     {
+        // ImGui
+        ImGuiInstance = std::make_shared<Spinner::ImGuiInstance>(Graphics);
+
         // Scene
         Scene = std::make_shared<Spinner::Scene>("Main Scene");
 
@@ -91,13 +98,17 @@ namespace Spinner
         auto camera = cameraObject->AddComponent<Components::CameraComponent>();
         camera->SetActiveCamera();
         cameraObject->SetLocalPosition({0, 0, 5});
+        cameraObject->SetLocalRotation({0, 0, 0, 1});
         cameraObject->SetLocalMatrix(glm::inverse(glm::lookAt(cameraObject->GetLocalPosition(), {0, 0, 0}, {0, 1, 0})));
 
         Scene->AddObjectToScene(cameraObject);
+        CameraObject = cameraObject;
     }
 
     void App::AppCleanup()
     {
+        ImGuiInstance.reset();
+
         MeshData::StaticMeshVertex::DestroyShaders();
     }
 
@@ -130,6 +141,8 @@ namespace Spinner
 
         Scene->Draw(commandBuffer);
 
+        ImGuiInstance::EndFrame(commandBuffer->VkCommandBuffer);
+
         commandBuffer->EndRendering();
 
         // Transition color image for presentation
@@ -138,6 +151,38 @@ namespace Spinner
 
     void App::AppUpdate()
     {
+        ImGuiInstance::StartFrame();
+
         Scene->Update(Graphics->CurrentFrame);
+
+        if (!CameraObject.expired())
+        {
+            auto cameraObject = CameraObject.lock();
+            auto cameraComponentOptional = cameraObject->GetFirstComponent<Components::CameraComponent>();
+
+            if (cameraComponentOptional.has_value() && ImGui::Begin("Camera Properties"))
+            {
+                auto cameraComponent = cameraComponentOptional.value();
+                glm::vec3 cameraPosition = cameraObject->GetLocalPosition();
+                if (ImGui::DragFloat3("Position", &cameraPosition.x, 0.05f))
+                {
+                    cameraObject->SetLocalPosition(cameraPosition);
+                }
+
+                glm::quat cameraRotation = cameraObject->GetLocalRotation();
+                if (ImGui::DragFloat4("Rotation", &cameraRotation.x, 0.01f))
+                {
+                    cameraObject->SetLocalRotation(cameraRotation);
+                }
+
+                float fov = cameraComponent->GetFOV();
+                if (ImGui::DragFloat("FOV", &fov, 0.1f, 0.5f, 175.0f))
+                {
+                    cameraComponent->SetFOV(fov);
+                }
+
+                ImGui::End();
+            }
+        }
     }
 } // Spinner

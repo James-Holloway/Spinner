@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.26)
 project(Spinner)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -12,6 +12,17 @@ find_package(glfw3 REQUIRED 3.4)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 add_subdirectory(ThirdParty/tinygltf)
+
+add_library(imgui STATIC
+        ThirdParty/imgui/imgui.cpp
+        ThirdParty/imgui/imgui_demo.cpp
+        ThirdParty/imgui/imgui_draw.cpp
+        ThirdParty/imgui/imgui_tables.cpp
+        ThirdParty/imgui/imgui_widgets.cpp
+        ThirdParty/imgui/backends/imgui_impl_glfw.cpp
+        ThirdParty/imgui/backends/imgui_impl_vulkan.cpp
+        ThirdParty/imgui/misc/cpp/imgui_stdlib.cpp)
+target_include_directories(imgui PUBLIC ThirdParty/imgui)
 
 add_library(Spinner OBJECT
         Spinner/Graphics.cpp
@@ -62,8 +73,10 @@ add_library(Spinner OBJECT
         Spinner/Constants.hpp
         Spinner/Components/CameraComponent.cpp
         Spinner/Components/CameraComponent.hpp
+        Spinner/ImGuiInstance.cpp
+        Spinner/ImGuiInstance.hpp
 )
-target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf)
+target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 
 add_executable(SpinnerTestApp
         main.cpp

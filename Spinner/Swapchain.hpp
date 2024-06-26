@@ -18,6 +18,7 @@ namespace Spinner
     protected:
         int Width = 0, Height = 0;
         bool VSync = false;
+        uint32_t ImageCount = 0;
 
         vk::SwapchainKHR SwapchainKHR;
         std::vector<vk::Image> SwapchainImages;
@@ -32,11 +33,12 @@ namespace Spinner
 
     public:
         void Recreate(const vk::Device &device, const vk::PhysicalDevice &physicalDevice, const vk::SurfaceKHR &surface, int width, int height, bool vsync = false);
-
         [[nodiscard]] const vk::SwapchainKHR &GetSwapchainKHR() const;
         [[nodiscard]] vk::Extent2D GetSwapchainExtent() const;
         [[nodiscard]] vk::Image GetImage(uint32_t imageIndex);
         [[nodiscard]] vk::ImageView GetImageView(uint32_t imageIndex);
+        [[nodiscard]] uint32_t GetImageCount() const;
+        [[nodiscard]] vk::Format GetImageFormat() const;
     };
 
 } // Spinner

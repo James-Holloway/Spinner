@@ -558,4 +558,29 @@ namespace Spinner
         return GraphicsInstance->CurrentFrame;
     }
 
+    std::shared_ptr<Spinner::Window> Graphics::GetMainWindow()
+    {
+        return MainWindow;
+    }
+
+    vk::Queue Graphics::GetGraphicsQueue()
+    {
+        return GraphicsQueue;
+    }
+
+    uint32_t Graphics::GetGraphicsQueueFamily()
+    {
+        return GraphicsQueueFamilyIndex;
+    }
+
+    Spinner::Swapchain *Graphics::GetSwapchainRawPointer()
+    {
+        return Swapchain.get();
+    }
+
+    vk::SurfaceKHR Graphics::GetMainSurface()
+    {
+        return MainWindow->GetSurface();
+    }
+
 } // Spinner

@@ -14,6 +14,8 @@ namespace Spinner
         friend class Graphics;
 
     public:
+        using Pointer = std::shared_ptr<Scene>;
+
         explicit Scene(std::string name);
         ~Scene() override = default;
 

@@ -4,3 +4,7 @@
 [submodule "ThirdParty/VulkanMemoryAllocator-Hpp"]
 	path = ThirdParty/VulkanMemoryAllocator-Hpp
 	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp
+[submodule "ThirdParty/imgui"]
+	path = ThirdParty/imgui
+	url = https://github.com/ocornut/imgui
+	branch = docking
