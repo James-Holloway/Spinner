@@ -118,7 +118,7 @@ namespace Spinner
 
     void SceneObject::ConstructMatrix()
     {
-        Matrix = glm::translate(glm::mat4{1.0f}, Position) * glm::mat4_cast(Rotation) * glm::scale(glm::mat4{1.0f}, Scale);
+        Matrix = glm::translate(glm::mat4{1.0f}, Position) * glm::mat4_cast(Rotation) * glm::eulerAngleYXZ(glm::radians(EulerRotation.y), glm::radians(EulerRotation.x), glm::radians(EulerRotation.z)) * glm::scale(glm::mat4{1.0f}, Scale);
         DirtyMatrix = false;
     }
 
@@ -130,7 +130,7 @@ namespace Spinner
         }
         else if (GetParent() != nullptr)
         {
-            WorldMatrix = GetParent()->GetWorldMatrix() * GetLocalMatrix();
+            WorldMatrix = GetLocalMatrix() * GetParent()->GetWorldMatrix();
         }
         else
         {
@@ -162,6 +162,11 @@ namespace Spinner
         return Rotation;
     }
 
+    glm::vec3 SceneObject::GetLocalEulerRotation()
+    {
+        return EulerRotation;
+    }
+
     glm::vec3 SceneObject::GetLocalScale()
     {
         return Scale;
@@ -181,6 +186,18 @@ namespace Spinner
         if (IsScene)
             return;
         Rotation = rotation;
+        DirtyMatrix = true;
+        SetWorldMatrixDirty();
+    }
+
+    void SceneObject::SetLocalEulerRotation(glm::vec3 eulerRotation)
+    {
+        if (IsScene)
+        {
+            return;
+        }
+
+        EulerRotation = eulerRotation;
         DirtyMatrix = true;
         SetWorldMatrixDirty();
     }
@@ -206,6 +223,7 @@ namespace Spinner
         Position = position;
         Rotation = rotation;
         Scale = scale;
+        EulerRotation = {0, 0, 0};
 
         DirtyMatrix = true;
         SetWorldMatrixDirty();

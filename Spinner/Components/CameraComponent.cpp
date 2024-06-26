@@ -80,8 +80,9 @@ namespace Spinner
             sceneConstants.CameraExtent = cameraExtent;
             sceneConstants.CameraPosition = position;
             sceneConstants.View = view;
-            sceneConstants.Projection = glm::perspective(glm::radians(FOV), aspect, NearZ, FarZ);
-            sceneConstants.Projection[1][1] *= -1;
+            sceneConstants.Projection = glm::perspectiveLH(glm::radians(FOV), aspect, NearZ, FarZ);
+            sceneConstants.Projection[0][0] *= -1; // invert X direction
+            sceneConstants.Projection[1][1] *= -1; // invert Y direction
             sceneConstants.ViewProjection = sceneConstants.Projection * view;
         }
 

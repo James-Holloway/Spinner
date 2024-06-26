@@ -86,11 +86,13 @@ namespace Spinner
         glm::mat4 GetLocalMatrix();
         glm::vec3 GetLocalPosition();
         glm::quat GetLocalRotation();
+        glm::vec3 GetLocalEulerRotation();
         glm::vec3 GetLocalScale();
 
         void SetLocalMatrix(glm::mat4 matrix);
         void SetLocalPosition(glm::vec3 position);
         void SetLocalRotation(glm::quat rotation);
+        void SetLocalEulerRotation(glm::vec3 eulerRotation);
         void SetLocalScale(glm::vec3 scale);
 
         glm::mat4 GetWorldMatrix();
@@ -236,7 +238,8 @@ namespace Spinner
         std::atomic<int64_t> ComponentIndexCounter = 0;
 
         glm::vec3 Position{0, 0, 0};
-        glm::quat Rotation{0, 0, 0, 1};
+        glm::quat Rotation{1, 0, 0, 0};
+        glm::vec3 EulerRotation{0, 0, 0};
         glm::vec3 Scale{1, 1, 1};
         glm::mat4 Matrix{1.0f};
         glm::mat4 WorldMatrix{1.0f};

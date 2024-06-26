@@ -95,19 +95,19 @@ namespace Spinner
 
         MeshData::StaticMeshVertex::CreateShaders();
 
-        auto suzanneObject = Scene::LoadModel("suzanne.glb");
+        auto suzanneObject = Scene::LoadModel("collection of things.glb");
 
         if (!Scene->AddObjectToScene(suzanneObject))
         {
-            throw std::runtime_error("Suzanne was unable to be loaded");
+            throw std::runtime_error("Model was unable to be loaded");
         }
 
         auto cameraObject = SceneObject::Create("Main Camera");
         auto camera = cameraObject->AddComponent<Components::CameraComponent>();
         camera->SetActiveCamera();
         cameraObject->SetLocalPosition({0, 0, 5});
-        cameraObject->SetLocalRotation({0, 0, 0, 1});
-        cameraObject->SetLocalMatrix(glm::inverse(glm::lookAt(cameraObject->GetLocalPosition(), {0, 0, 0}, {0, 1, 0})));
+        cameraObject->SetLocalRotation({1, 0, 0, 0});
+        cameraObject->SetLocalEulerRotation({0, 180, 0});
 
         Scene->AddObjectToScene(cameraObject);
         CameraObject = cameraObject;
@@ -232,6 +232,12 @@ namespace Spinner
                 if (ImGui::DragFloat4("Rotation", &cameraRotation.x, 0.01f))
                 {
                     cameraObject->SetLocalRotation(cameraRotation);
+                }
+
+                glm::vec3 cameraEulerRotation = cameraObject->GetLocalEulerRotation();
+                if (ImGui::DragFloat3("Euler Rotation", &cameraEulerRotation.x, 0.1f))
+                {
+                    cameraObject->SetLocalEulerRotation(cameraEulerRotation);
                 }
 
                 float fov = cameraComponent->GetFOV();
