@@ -14,7 +14,7 @@ namespace Spinner::Components
 
         RegisterCallback(SceneObject.lock()->ParentChanged, [this](const auto &sceneObject, const auto &scene) -> void
         {
-            ConstantsDirtyCount = MAX_FRAMES_IN_FLIGHT;
+            SetConstantBindingsDirty();
         });
     }
 
@@ -26,18 +26,27 @@ namespace Spinner::Components
     void MeshComponent::SetVertexShaderInstance(Spinner::ShaderInstance::Pointer newShaderInstance)
     {
         VertexShaderInstance = std::move(newShaderInstance);
-        ConstantsDirtyCount = MAX_FRAMES_IN_FLIGHT;
     }
 
     void MeshComponent::SetFragmentShaderInstance(Spinner::ShaderInstance::Pointer newShaderInstance)
     {
         FragmentShaderInstance = std::move(newShaderInstance);
-        ConstantsDirtyCount = MAX_FRAMES_IN_FLIGHT;
+        SetConstantBindingsDirty();
     }
 
     void MeshComponent::SetMeshBuffer(Spinner::MeshBuffer::Pointer newMeshShader)
     {
         MeshBuffer = std::move(newMeshShader);
+    }
+
+    Spinner::Material::Pointer MeshComponent::GetMaterial()
+    {
+        return Material;
+    }
+
+    void MeshComponent::SetMaterial(const Material::Pointer &material)
+    {
+        Material = material;
     }
 
     void MeshComponent::Draw(const std::shared_ptr<CommandBuffer> &commandBuffer)
@@ -65,7 +74,7 @@ namespace Spinner::Components
     {
         VertexShaderInstance = ShaderInstance::CreateInstance(vertexShader, descriptorPool);
         FragmentShaderInstance = ShaderInstance::CreateInstance(fragmentShader, descriptorPool);
-        ConstantsDirtyCount = true;
+        SetConstantBindingsDirty();
     }
 
     void MeshComponent::UpdateConstantBuffer(const MeshComponent::ConstantBufferType &constants)
@@ -81,17 +90,28 @@ namespace Spinner::Components
 
     void MeshComponent::Update(const std::shared_ptr<Scene> &scene, uint32_t currentFrame)
     {
-        if (ConstantsDirtyCount <= 0)
+        if (Material != nullptr)
         {
-            return;
+            auto constants = GetMeshConstants();
+            Material->ApplyMaterial(constants);
+            UpdateConstantBuffer(constants);
         }
 
-        VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
-        VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
+        // Used for updating each frame
+        if (ConstantBindingsDirty[currentFrame])
+        {
+            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
+            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
 
-        FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
-        FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
+            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
+            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
 
-        ConstantsDirtyCount--;
+            ConstantBindingsDirty[currentFrame] = false;
+        }
+    }
+
+    void MeshComponent::SetConstantBindingsDirty()
+    {
+        ConstantBindingsDirty.set();
     }
 }

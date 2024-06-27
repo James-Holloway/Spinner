@@ -1,5 +1,7 @@
 #version 450
 
+#define CUSTOM_MATERIAL_PROPERTY_COUNT 16
+
 layout(set = 0, binding = 0) uniform Scene {
     mat4 viewProjection;
     mat4 view;
@@ -15,6 +17,7 @@ layout(set = 0, binding = 1) uniform Mesh
     mat4 model;
     vec4 materialColor;
     vec4 materialProperties;
+    float customMaterialProperties[CUSTOM_MATERIAL_PROPERTY_COUNT];
 };
 
 layout (location = 0) in vec3 inPosition;
@@ -28,11 +31,13 @@ layout (location = 1) out vec3 outTangent;
 layout (location = 2) out vec3 outBitangent;
 layout (location = 3) out vec2 outTexCoord;
 layout (location = 4) out vec3 outColor;
+layout (location = 5) out vec3 outWorldPosition;
 
 void main()
 {
     // Position
-    gl_Position = viewProjection * model * vec4(inPosition, 1.0);
+    gl_Position = viewProjection * model * vec4(inPosition, 1.0f);
+    outWorldPosition = (model * vec4(inPosition, 1.0f)).xyz;
 
     // TBN
     outNormal = normalize((model * vec4(inNormal, 0.0f)).xyz);

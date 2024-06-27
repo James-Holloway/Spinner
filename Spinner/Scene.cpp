@@ -1,5 +1,6 @@
 #include "Scene.hpp"
 
+#include <map>
 #include <utility>
 #include <iostream>
 #include "tiny_gltf.h"
@@ -7,6 +8,7 @@
 #include "MeshBuilder.hpp"
 #include "MeshData/StaticMeshVertex.hpp"
 #include "Components/CameraComponent.hpp"
+#include "Material.hpp"
 
 namespace Spinner
 {
@@ -104,6 +106,12 @@ namespace Spinner
     {
         Spinner::MeshBuffer::Pointer MeshBuffer;
         std::string Name;
+        int MaterialIndex = 0;
+    };
+
+    struct SceneInformation
+    {
+        std::vector<Spinner::Material::Pointer> Materials;
     };
 
     static bool DoesMeshHaveAttribute(const tinygltf::Mesh &mesh, const std::string &attribute)
@@ -289,7 +297,7 @@ namespace Spinner
                 meshName = model.materials.at(primitive.material).name;
             }
 
-            meshes.emplace_back(MeshData::StaticMeshVertex::CreateMeshBuilder().SetIndices(indices).SetVertexData(vertices).Create(), meshName);
+            meshes.emplace_back(MeshData::StaticMeshVertex::CreateMeshBuilder().SetIndices(indices).SetVertexData(vertices).Create(), meshName, primitive.material);
         }
 
         return meshes;
@@ -316,7 +324,7 @@ namespace Spinner
         return CreateStaticMeshBuffersFromMesh(model, mesh);
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const std::string &nodeName)
+    static SceneObject::Pointer CreateSceneObjectFromMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const std::string &nodeName, const SceneInformation &sceneInfo)
     {
         auto sceneObject = std::make_shared<SceneObject>(nodeName);
 
@@ -330,6 +338,11 @@ namespace Spinner
             meshComponent->SetMeshBuffer(meshBuffer);
             meshComponent->PopulateFromShaders(MeshData::StaticMeshVertex::VertexShader, MeshData::StaticMeshVertex::FragmentShader, MeshData::StaticMeshVertex::DescriptorPool);
             meshComponent->SetComponentName(meshName);
+
+            if (meshInformation.MaterialIndex >= 0)
+            {
+                meshComponent->SetMaterial(sceneInfo.Materials.at(meshInformation.MaterialIndex));
+            }
         }
 
         return sceneObject;
@@ -340,7 +353,7 @@ namespace Spinner
         return std::make_shared<SceneObject>(nodeName);
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromNode(const tinygltf::Model &model, const int nodeId)
+    static SceneObject::Pointer CreateSceneObjectFromNode(const tinygltf::Model &model, const int nodeId, const SceneInformation &sceneInfo)
     {
         auto &node = model.nodes.at(nodeId);
 
@@ -352,7 +365,7 @@ namespace Spinner
             if (node.mesh >= 0)
             {
                 auto &mesh = model.meshes.at(node.mesh);
-                sceneObject = CreateSceneObjectFromMesh(model, mesh, node.name);
+                sceneObject = CreateSceneObjectFromMesh(model, mesh, node.name, sceneInfo);
             }
             else
             {
@@ -382,7 +395,7 @@ namespace Spinner
             // Child nodes
             for (auto childId : node.children)
             {
-                auto child = CreateSceneObjectFromNode(model, childId);
+                auto child = CreateSceneObjectFromNode(model, childId, sceneInfo);
                 if (child != nullptr)
                 {
                     sceneObject->AddChild(child);
@@ -399,7 +412,7 @@ namespace Spinner
         return sceneObject;
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromScene(const tinygltf::Model &model, const tinygltf::Scene &scene)
+    static SceneObject::Pointer CreateSceneObjectFromScene(const tinygltf::Model &model, const tinygltf::Scene &scene, const SceneInformation &sceneInfo)
     {
         if (scene.nodes.empty())
         {
@@ -409,7 +422,7 @@ namespace Spinner
 
         for (auto node : scene.nodes)
         {
-            auto nodeObject = CreateSceneObjectFromNode(model, node);
+            auto nodeObject = CreateSceneObjectFromNode(model, node, sceneInfo);
             if (nodeObject == nullptr)
             {
                 continue;
@@ -464,6 +477,33 @@ namespace Spinner
             throw std::runtime_error("Unable to parse binary GLTF " + modelFilename + " ");
         }
 
+        // Create materials
+        SceneInformation sceneInfo{};
+        sceneInfo.Materials.resize(model.materials.size());
+        for (size_t i = 0; i < model.materials.size(); i++)
+        {
+            auto &mat = model.materials[i];
+            auto material = Material::CreateMaterial(mat.name);
+
+            // Color + alpha
+            auto &color = mat.pbrMetallicRoughness.baseColorFactor;
+            auto alpha = static_cast<float>(mat.alphaCutoff);
+            if (color.size() >= 3)
+            {
+                material->SetColor(glm::vec4{static_cast<float>(color[0]), static_cast<float>(color[1]), static_cast<float>(color[2]), alpha});
+            }
+
+            // Roughness
+            auto roughness = static_cast<float>(mat.pbrMetallicRoughness.roughnessFactor);
+            material->SetRoughness(roughness);
+
+            // Metallic
+            auto metallic = static_cast<float>(mat.pbrMetallicRoughness.metallicFactor);
+            material->SetMetallic(metallic);
+
+            sceneInfo.Materials[i] = material;
+        }
+
         // If multiple scenes
         if (model.scenes.size() > 1)
         {
@@ -471,7 +511,7 @@ namespace Spinner
             SceneObject::Pointer fileObject = std::make_shared<SceneObject>(fileName);
             for (auto &scene : model.scenes)
             {
-                auto sceneObject = CreateSceneObjectFromScene(model, scene);
+                auto sceneObject = CreateSceneObjectFromScene(model, scene, sceneInfo);
                 if (sceneObject == nullptr)
                 {
                     continue;
@@ -489,7 +529,7 @@ namespace Spinner
         }
 
         // If only one scene then create it
-        return CreateSceneObjectFromScene(model, model.scenes.at(model.defaultScene));
+        return CreateSceneObjectFromScene(model, model.scenes.at(model.defaultScene), sceneInfo);
     }
 
     bool Scene::IsActive() const noexcept

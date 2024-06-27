@@ -77,6 +77,8 @@ add_library(Spinner OBJECT
         Spinner/ImGuiInstance.hpp
         Spinner/Image.cpp
         Spinner/Image.hpp
+        Spinner/Material.cpp
+        Spinner/Material.hpp
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 
