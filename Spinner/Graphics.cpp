@@ -197,6 +197,12 @@ namespace Spinner
             return 0;
         }
 
+        // Application also requires bindless descriptor features
+        if (!vulkan12Features.descriptorBindingPartiallyBound || !vulkan12Features.shaderSampledImageArrayNonUniformIndexing || !vulkan12Features.shaderUniformBufferArrayNonUniformIndexing || !vulkan12Features.shaderStorageBufferArrayNonUniformIndexing || !vulkan12Features.descriptorBindingSampledImageUpdateAfterBind || !vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind || !vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind)
+        {
+            return 0;
+        }
+
         // This application cannot function without a graphics, present and compute queue
         QueueFamilyIndices indices = FindQueueFamilies(device, MainWindow->GetSurface());
         if (!indices.IsComplete())
@@ -301,6 +307,13 @@ namespace Spinner
         auto &vulkan11Features = chain.get<vk::PhysicalDeviceVulkan11Features>();
 
         auto &vulkan12Features = chain.get<vk::PhysicalDeviceVulkan12Features>();
+        vulkan12Features.descriptorBindingPartiallyBound = true;
+        vulkan12Features.shaderSampledImageArrayNonUniformIndexing = true;
+        vulkan12Features.shaderUniformBufferArrayNonUniformIndexing = true;
+        vulkan12Features.shaderStorageBufferArrayNonUniformIndexing = true;
+        vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = true;
+        vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind = true;
+        vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind = true;
 
         auto &vulkan13Features = chain.get<vk::PhysicalDeviceVulkan13Features>();
         vulkan13Features.dynamicRendering = true;

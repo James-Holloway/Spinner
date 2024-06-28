@@ -20,6 +20,8 @@ layout(set = 0, binding = 1) uniform Mesh
     float customMaterialProperties[CUSTOM_MATERIAL_PROPERTY_COUNT];
 };
 
+layout (set = 0, binding = 2) uniform sampler2D mainTexture;
+
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inTangent;
 layout (location = 2) in vec3 inBitangent;
@@ -38,5 +40,7 @@ void main()
     float metallic = materialProperties.y;
 
     vec3 matCol = materialColor.xyz * inColor.xyz;
+    matCol *= texture(mainTexture, inTexCoord).xyz;
+
     outColor = vec4(matCol, 1.0);
 }

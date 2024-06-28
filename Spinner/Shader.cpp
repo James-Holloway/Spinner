@@ -3,6 +3,7 @@
 #include "Utilities.hpp"
 #include "Graphics.hpp"
 #include "Buffer.hpp"
+#include "Texture.hpp"
 
 namespace Spinner
 {
@@ -157,6 +158,48 @@ namespace Spinner
         return DescriptorSetLayout->GetDescriptorSetLayout();
     }
 
+    uint32_t Shader::GetBindingFromIndex(uint32_t indexOfType, vk::DescriptorType type)
+    {
+        size_t index = 0;
+        auto bindings = GetDescriptorSetLayoutBindings();
+        for (auto &binding : bindings)
+        {
+            bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
+            bool sameType = (binding.descriptorType == type);
+            if (sameStage && sameType)
+            {
+                if (index == indexOfType)
+                {
+                    return binding.binding;
+                }
+                index++;
+            }
+        }
+
+        return InvalidBindingIndex;
+    }
+
+    uint32_t Shader::GetBindingFromIndex(uint32_t indexOfType, const std::vector<vk::DescriptorType> &types)
+    {
+        size_t index = 0;
+        auto bindings = GetDescriptorSetLayoutBindings();
+        for (auto &binding : bindings)
+        {
+            bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
+            bool sameType = Contains(types, binding.descriptorType);
+            if (sameStage && sameType)
+            {
+                if (index == indexOfType)
+                {
+                    return binding.binding;
+                }
+                index++;
+            }
+        }
+
+        return InvalidBindingIndex;
+    }
+
     ShaderInstance::ShaderInstance(const ShaderInstanceCreateInfo &createInfo)
     {
         if (createInfo.Shader == nullptr || createInfo.Shader->VkShader == nullptr)
@@ -255,6 +298,16 @@ namespace Spinner
         return Shader->NextStage;
     }
 
+    Spinner::Shader::Pointer ShaderInstance::GetShader() const
+    {
+        return Shader;
+    }
+
+    Spinner::DescriptorPool::Pointer ShaderInstance::GetDescriptorPool() const
+    {
+        return DescriptorPool;
+    }
+
     std::vector<vk::DescriptorSet> ShaderInstance::GetDescriptorSets(uint32_t currentFrame) const
     {
         return VkDescriptorSets.at(currentFrame);
@@ -304,6 +357,42 @@ namespace Spinner
     ShaderInstance::Pointer ShaderInstance::CreateInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool)
     {
         return std::make_shared<ShaderInstance>(shader, descriptorPool);
+    }
+
+    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout) const
+    {
+        assert(texture != nullptr);
+        assert(texture->GetImage() != nullptr);
+        assert(texture->GetImage()->GetMainImageView() != nullptr);
+        assert(texture->GetSampler() != nullptr);
+
+        UpdateDescriptorImage(currentFrame, binding, texture->GetImage()->GetMainImageView(), texture->GetSampler()->GetSampler());
+    }
+
+    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout) const
+    {
+        auto descriptorType = GetDescriptorTypeOfBinding(binding);
+        if (!descriptorType.has_value())
+        {
+            throw std::runtime_error("Cannot get binding type from Shader's descriptor set layout bindings, binding #" + std::to_string(binding));
+        }
+
+        auto sets = GetDescriptorSets(currentFrame);
+
+        vk::DescriptorImageInfo imageInfo;
+        imageInfo.imageView = imageView;
+        imageInfo.imageLayout = imageLayout;
+        imageInfo.sampler = sampler;
+
+        vk::WriteDescriptorSet writeDescriptorSet;
+        writeDescriptorSet.dstSet = sets.at(0); // WARNING: only one set is bound currently (check CreateDescriptors)
+        writeDescriptorSet.dstBinding = binding;
+        writeDescriptorSet.dstArrayElement = 0;
+        writeDescriptorSet.descriptorType = descriptorType.value();
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.pImageInfo = &imageInfo;
+
+        Graphics::GetDevice().updateDescriptorSets(writeDescriptorSet, nullptr);
     }
 
     std::string GetShaderFileName(const std::string &shaderName, vk::ShaderStageFlagBits stage)

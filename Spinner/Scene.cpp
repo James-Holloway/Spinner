@@ -9,6 +9,8 @@
 #include "MeshData/StaticMeshVertex.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Material.hpp"
+#include "Image.hpp"
+#include "Texture.hpp"
 
 namespace Spinner
 {
@@ -112,6 +114,7 @@ namespace Spinner
     struct SceneInformation
     {
         std::vector<Spinner::Material::Pointer> Materials;
+        std::string Warnings;
     };
 
     static bool DoesMeshHaveAttribute(const tinygltf::Mesh &mesh, const std::string &attribute)
@@ -141,9 +144,9 @@ namespace Spinner
             return false;
         }
 
-        accessor = model.accessors[attribIter->second];
-        bufferView = model.bufferViews[accessor.bufferView];
-        buffer = model.buffers[bufferView.buffer];
+        accessor = model.accessors.at(attribIter->second);
+        bufferView = model.bufferViews.at(accessor.bufferView);
+        buffer = model.buffers.at(bufferView.buffer);
 
         return true;
     }
@@ -176,7 +179,7 @@ namespace Spinner
 
                 vertices.resize(vertexCount);
 
-                auto positionBuffer = reinterpret_cast<const float *>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+                auto positionBuffer = reinterpret_cast<const float *>(&buffer.data.at(bufferView.byteOffset + accessor.byteOffset));
                 for (size_t i = 0; i < accessor.count; i++)
                 {
                     auto &vertex = vertices[i];
@@ -193,10 +196,10 @@ namespace Spinner
 
             // Indices
             {
-                accessor = model.accessors[primitive.indices];
+                accessor = model.accessors.at(primitive.indices);
 
-                bufferView = model.bufferViews[accessor.bufferView];
-                buffer = model.buffers[bufferView.buffer];
+                bufferView = model.bufferViews.at(accessor.bufferView);
+                buffer = model.buffers.at(bufferView.buffer);
 
                 indices.resize(accessor.count);
 
@@ -324,8 +327,13 @@ namespace Spinner
         return CreateStaticMeshBuffersFromMesh(model, mesh);
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, const std::string &nodeName, const SceneInformation &sceneInfo)
+    static SceneObject::Pointer CreateSceneObjectFromMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, std::string nodeName, const SceneInformation &sceneInfo)
     {
+        if (nodeName.empty())
+        {
+            nodeName = mesh.name;
+        }
+
         auto sceneObject = std::make_shared<SceneObject>(nodeName);
 
         auto meshes = CreateMeshBuffersFromMesh(model, mesh);
@@ -353,7 +361,8 @@ namespace Spinner
         return std::make_shared<SceneObject>(nodeName);
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromNode(const tinygltf::Model &model, const int nodeId, const SceneInformation &sceneInfo)
+    // Recursively calls itself with its children's IDs
+    static SceneObject::Pointer CreateSceneObjectFromNode(const tinygltf::Model &model, const int nodeId, SceneInformation &sceneInfo)
     {
         auto &node = model.nodes.at(nodeId);
 
@@ -375,6 +384,7 @@ namespace Spinner
             // Don't try child nodes if this node failed
             if (sceneObject == nullptr)
             {
+                sceneInfo.Warnings += "Not adding child nodes of node id " + std::to_string(nodeId) + " \" " + node.name + "\" as this node failed to be created\n";
                 return nullptr;
             }
 
@@ -391,6 +401,10 @@ namespace Spinner
             {
                 sceneObject->SetLocalScale(glm::vec3(static_cast<float>(node.scale[0]), static_cast<float>(node.scale[1]), static_cast<float>(node.scale[2])));
             }
+            if (!node.matrix.empty())
+            {
+                sceneObject->SetLocalMatrix(glm::mat4(glm::make_mat4x4(node.matrix.data())));
+            }
 
             // Child nodes
             for (auto childId : node.children)
@@ -406,13 +420,13 @@ namespace Spinner
         catch (const std::exception &ex)
         {
             std::string modelName = model.scenes.at(model.defaultScene).name;
-            std::cerr << "Error while loading GLTF model " << modelName << " at node " << node.name << ": " << ex.what() << '\n';
+            sceneInfo.Warnings += "Error while loading GLTF model " + modelName + " at node " + node.name + ": " + ex.what() + '\n';
         }
 
         return sceneObject;
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromScene(const tinygltf::Model &model, const tinygltf::Scene &scene, const SceneInformation &sceneInfo)
+    static SceneObject::Pointer CreateSceneObjectFromScene(const tinygltf::Model &model, const tinygltf::Scene &scene, SceneInformation &sceneInfo)
     {
         if (scene.nodes.empty())
         {
@@ -433,6 +447,159 @@ namespace Spinner
 
         return sceneObject;
     }
+
+    // Note: will not acknowledge magFilter's setting
+    // Note: will not acknowledge wrapT's setting
+    static Sampler::Pointer CreateSamplerFromTexture(const tinygltf::Model &model, const tinygltf::Texture &texture)
+    {
+        // Sampler selecting
+        vk::Filter minMagFilter = vk::Filter::eLinear;
+        vk::SamplerMipmapMode mipFilter = vk::SamplerMipmapMode::eLinear;
+        vk::SamplerAddressMode repeat = vk::SamplerAddressMode::eRepeat;
+        if (texture.sampler >= 0)
+        {
+            auto &colorSampler = model.samplers.at(texture.sampler);
+            switch (colorSampler.minFilter)
+            {
+                case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
+                    mipFilter = vk::SamplerMipmapMode::eNearest;
+                case TINYGLTF_TEXTURE_FILTER_NEAREST:
+                case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
+                    minMagFilter = vk::Filter::eNearest;
+                    break;
+                default:
+                    break;
+            }
+
+            switch (colorSampler.wrapS)
+            {
+                case TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE:
+                    repeat = vk::SamplerAddressMode::eClampToEdge;
+                    break;
+                case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
+                    repeat = vk::SamplerAddressMode::eMirroredRepeat;
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        return Sampler::CreateSampler(minMagFilter, mipFilter, repeat);
+    }
+
+    // Note: loads an invalid texture (magenta) when failing to load the texture
+    static Image::Pointer CreateImageFromTexture(const tinygltf::Model &model, const tinygltf::Texture &texture, SceneInformation &sceneInfo)
+    {
+        if (texture.source < 0 || texture.source >= model.images.size())
+        {
+            sceneInfo.Warnings += "Texture source " + std::to_string(texture.source) + " was not in the valid range of images\n";
+            return nullptr;
+        }
+
+        auto image = model.images.at(texture.source);
+        if (!image.image.empty())
+        {
+            if (image.width == 0 || image.height == 0)
+            {
+                sceneInfo.Warnings += "Could not load a zero dimensioned image from texture \"" + texture.name + "\"\n";
+                return nullptr;
+            }
+
+            vk::Format format = (image.bits == 16) ? vk::Format::eR16G16B16A16Unorm : vk::Format::eR8G8B8A8Unorm;
+            if (image.component == 3)
+            {
+                format = (image.bits == 16) ? vk::Format::eR16G16B16Unorm : vk::Format::eR8G8B8Unorm;
+            }
+
+            auto loadedImage = Image::CreateImage({static_cast<uint32_t>(image.width), static_cast<uint32_t>(image.height)}, format);
+            loadedImage->Write(image.image, vk::ImageAspectFlagBits::eColor, nullptr);
+
+            return loadedImage;
+        }
+        else if (!image.uri.empty())
+        {
+            if (image.uri.starts_with("data:")) // Don't support data uris
+            {
+                sceneInfo.Warnings += "Could not load texture named \"" + texture.name + "\" from a 'data:' URI\n";
+                return nullptr;
+            }
+
+            // Load from texture filename
+            // Strip non-filename data (like relative paths)
+            std::string textureFilename = std::filesystem::path(image.uri).filename().string();;
+
+            return Image::LoadFromTextureFile(textureFilename);
+        }
+
+        sceneInfo.Warnings += "Could not load texture as it contains no bufferView or URI\n";
+
+        return nullptr;
+    }
+
+    static Texture::Pointer CreateTextureFromTexture(const tinygltf::Model &model, const tinygltf::Texture &texture, SceneInformation &sceneInfo)
+    {
+        auto image = CreateImageFromTexture(model, texture, sceneInfo);
+        if (image == nullptr)
+        {
+            return Texture::GetMagentaTexture();
+        }
+
+        auto sampler = CreateSamplerFromTexture(model, texture);
+
+        return std::make_shared<Texture>(texture.name, image, sampler);
+    }
+
+    static void UpdateGlobalSceneInformationFromModel(const tinygltf::Model &model, SceneInformation &sceneInfo)
+    {
+        sceneInfo.Materials.resize(model.materials.size());
+        for (size_t i = 0; i < model.materials.size(); i++)
+        {
+            auto &mat = model.materials[i];
+            auto material = Material::CreateMaterial(mat.name);
+
+            // Color + alpha
+            auto &color = mat.pbrMetallicRoughness.baseColorFactor;
+            auto alpha = static_cast<float>(mat.alphaCutoff);
+            if (color.size() >= 3)
+            {
+                material->SetColor(glm::vec4{static_cast<float>(color[0]), static_cast<float>(color[1]), static_cast<float>(color[2]), alpha});
+            }
+
+            // Roughness
+            auto roughness = static_cast<float>(mat.pbrMetallicRoughness.roughnessFactor);
+            material->SetRoughness(roughness);
+
+            // Metallic
+            auto metallic = static_cast<float>(mat.pbrMetallicRoughness.metallicFactor);
+            material->SetMetallic(metallic);
+
+            // TODO emissive property (stored in gltf as a vec3 rather than just strength)
+
+            auto colorTextureIndex = mat.pbrMetallicRoughness.baseColorTexture.index;
+            if (colorTextureIndex >= 0)
+            {
+                auto colorTexture = CreateTextureFromTexture(model, model.textures.at(colorTextureIndex), sceneInfo);
+                material->SetTexture(0, colorTexture);
+            }
+
+            sceneInfo.Materials[i] = material;
+        }
+    }
+
+
+    /* Call hierarchy:
+     * Scene::LoadModel - Loads a GLTF model
+     *      UpdateGlobalSceneInformationFromModel - creates materials and loads textures
+     *          CreateTextureFromTexture - creates a Spinner::Texture
+     *              CreateImageFromTexture - loads a Spinner::Image from a tinygltf texture
+     *              CreateSamplerFromTexture - creates a Spinner::Sampler from a tinygltf texture's sampler
+     *      CreateSceneObjectFromScene - Creates a scene object from a GLTF model
+     *          CreateSceneObjectFromNode - recursive, calls itself on its node's children
+     *              DoesMeshHaveAttribute - used to see which kind of mesh to make (static/skinned)
+     *              CreateStaticMeshBuffersFromMesh / CreateSkinnedMeshBuffersFromMesh - creates a static or skinned mesh based on available attributes
+     *                  GetGLTFAttribute - used to get vertex attributes from a vertex data buffer
+     *              CreateEmptySceneObject - creates an empty scene object for when there is no mesh
+     */
 
     SceneObject::Pointer Scene::LoadModel(const std::string &modelFilename)
     {
@@ -479,30 +646,7 @@ namespace Spinner
 
         // Create materials
         SceneInformation sceneInfo{};
-        sceneInfo.Materials.resize(model.materials.size());
-        for (size_t i = 0; i < model.materials.size(); i++)
-        {
-            auto &mat = model.materials[i];
-            auto material = Material::CreateMaterial(mat.name);
-
-            // Color + alpha
-            auto &color = mat.pbrMetallicRoughness.baseColorFactor;
-            auto alpha = static_cast<float>(mat.alphaCutoff);
-            if (color.size() >= 3)
-            {
-                material->SetColor(glm::vec4{static_cast<float>(color[0]), static_cast<float>(color[1]), static_cast<float>(color[2]), alpha});
-            }
-
-            // Roughness
-            auto roughness = static_cast<float>(mat.pbrMetallicRoughness.roughnessFactor);
-            material->SetRoughness(roughness);
-
-            // Metallic
-            auto metallic = static_cast<float>(mat.pbrMetallicRoughness.metallicFactor);
-            material->SetMetallic(metallic);
-
-            sceneInfo.Materials[i] = material;
-        }
+        UpdateGlobalSceneInformationFromModel(model, sceneInfo);
 
         // If multiple scenes
         if (model.scenes.size() > 1)
@@ -519,6 +663,12 @@ namespace Spinner
 
                 fileObject->AddChild(sceneObject);
             }
+
+            if (!sceneInfo.Warnings.empty())
+            {
+                std::cerr << sceneInfo.Warnings;
+            }
+
             return fileObject;
         }
 
@@ -529,7 +679,14 @@ namespace Spinner
         }
 
         // If only one scene then create it
-        return CreateSceneObjectFromScene(model, model.scenes.at(model.defaultScene), sceneInfo);
+        auto outSceneObject = CreateSceneObjectFromScene(model, model.scenes.at(model.defaultScene), sceneInfo);
+
+        if (!sceneInfo.Warnings.empty())
+        {
+            std::cerr << sceneInfo.Warnings;
+        }
+
+        return outSceneObject;
     }
 
     bool Scene::IsActive() const noexcept

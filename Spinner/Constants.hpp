@@ -5,7 +5,8 @@
 
 namespace Spinner
 {
-    constexpr size_t CustomMaterialPropertyCount = 16;
+    constexpr uint32_t CustomMaterialPropertyCount = 16;
+    constexpr uint32_t MaxBoundTextures = 8;
 
     struct MeshConstants
     {

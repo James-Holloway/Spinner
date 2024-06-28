@@ -15,5 +15,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_projection.hpp>
 #include <glm/gtx/color_space.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #endif //SPINNER_GLM_HPP

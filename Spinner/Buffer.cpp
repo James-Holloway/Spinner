@@ -145,9 +145,9 @@ namespace Spinner
     void Buffer::CopyToImage(const std::shared_ptr<Image> &image, vk::ImageAspectFlags imageAspectFlags, CommandBuffer::Pointer commandBuffer, std::optional<vk::ImageSubresourceLayers> subresourceLayers, std::optional<vk::ImageSubresourceRange> subresourceRange)
     {
         // Ensure we can transfer from this
-        assert(static_cast<vk::BufferUsageFlags::MaskType>(BufferUsageFlags & vk::BufferUsageFlagBits::eTransferDst) != 0);
+        assert(static_cast<vk::BufferUsageFlags::MaskType>(BufferUsageFlags & vk::BufferUsageFlagBits::eTransferSrc) != 0);
         // And destination image can be transferred to
-        assert(static_cast<vk::BufferUsageFlags::MaskType>(image->ImageUsageFlags & vk::ImageUsageFlagBits::eTransferSrc) != 0);
+        assert(static_cast<vk::BufferUsageFlags::MaskType>(image->ImageUsageFlags & vk::ImageUsageFlagBits::eTransferDst) != 0);
         // And that this buffer's size fits in image's size
         assert(BufferSize <= image->GetImageSize());
 

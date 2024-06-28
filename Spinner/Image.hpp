@@ -21,8 +21,8 @@ namespace Spinner
     public:
         using Pointer = std::shared_ptr<Image>;
 
-        Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
-        Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e3D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
         virtual ~Image();
 
     public:
@@ -35,6 +35,7 @@ namespace Spinner
         vk::ImageType GetImageType() const noexcept;
         vk::ImageTiling GetImageTiling() const noexcept;
 
+        void Write(const uint8_t *textureData, size_t textureDataSize, vk::ImageAspectFlags aspectFlags, Spinner::CommandBuffer::Pointer commandBuffer = nullptr);
         void Write(const std::vector<uint8_t> &textureData, vk::ImageAspectFlags aspectFlags, Spinner::CommandBuffer::Pointer commandBuffer = nullptr);
 
         /// @param imageAspectFlags are ignored if subresourceRange provided
@@ -59,8 +60,11 @@ namespace Spinner
         vk::ImageLayout CurrentImageLayout = vk::ImageLayout::eUndefined;
 
     public:
-        static Pointer CreateImage(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
-        static Pointer CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        static Pointer CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        static Pointer CreateImage3D(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e3D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        static std::vector<uint8_t> DecodeEmbeddedImageData(const std::vector<uint8_t> &data, int &width, int &height, int &channels, bool &is16Bit);
+        static Pointer LoadFromEmbeddedImageData(const std::vector<uint8_t> &data, int mipLevels = 1);
+        static Pointer LoadFromTextureFile(const std::string& textureFilename, uint32_t mipLevels = 1);
     };
 
 } // Spinner

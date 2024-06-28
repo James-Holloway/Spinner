@@ -92,9 +92,13 @@ namespace Spinner::Components
     {
         if (Material != nullptr)
         {
+            // Update material
             auto constants = GetMeshConstants();
             Material->ApplyMaterial(constants);
             UpdateConstantBuffer(constants);
+
+            // Update textures
+            Material->ApplyTextures(FragmentShaderInstance);
         }
 
         // Used for updating each frame

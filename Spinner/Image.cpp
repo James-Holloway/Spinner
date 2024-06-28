@@ -1,13 +1,22 @@
 #include "Image.hpp"
 
+#include <utility>
+#include <stb_image.h>
+
 #include "Graphics.hpp"
 #include "VulkanUtilities.hpp"
 #include "Buffer.hpp"
 #include "CommandBuffer.hpp"
+#include "Utilities.hpp"
 
 namespace Spinner
 {
-    Image::Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : ImageExtent(extent), Format(format), ImageUsageFlags(usageFlags), ImageType(imageType)
+    Image::Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : Image(vk::Extent3D{extent.width, extent.height, 1}, format, usageFlags, imageType, tiling, mipLevels, memoryUsage)
+    {
+
+    }
+
+    Image::Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : ImageExtent(extent), Format(format), ImageUsageFlags(usageFlags), ImageType(imageType), ImageTiling(tiling)
     {
         vk::ImageCreateInfo createInfo;
         createInfo.imageType = ImageType;
@@ -27,11 +36,6 @@ namespace Spinner
         auto pair = Graphics::GetAllocator().createImage(createInfo, allocInfo);
         VkImage = pair.first;
         VmaAllocation = pair.second;
-    }
-
-    Image::Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : Image(vk::Extent3D{extent.width, extent.height, 1}, format, usageFlags, imageType, tiling, mipLevels, memoryUsage)
-    {
-
     }
 
     Image::~Image()
@@ -89,11 +93,11 @@ namespace Spinner
         return ImageType;
     }
 
-    void Image::Write(const std::vector<uint8_t> &textureData, vk::ImageAspectFlags aspectFlags, Spinner::CommandBuffer::Pointer commandBuffer)
+    void Image::Write(const uint8_t *textureData, size_t textureDataSize, vk::ImageAspectFlags aspectFlags, Spinner::CommandBuffer::Pointer commandBuffer)
     {
         vk::DeviceSize imageSize = GetImageSize();
 
-        if (textureData.size() != imageSize)
+        if (textureDataSize != imageSize)
         {
             throw std::runtime_error("Cannot write to image with different image size (ImageExtent * formatByteWidth) to textureData");
         }
@@ -105,16 +109,26 @@ namespace Spinner
             singleTime = true;
         }
 
+        if (CurrentImageLayout == vk::ImageLayout::eUndefined)
+        {
+            commandBuffer->TransitionImageLayout(shared_from_this(), vk::ImageLayout::eShaderReadOnlyOptimal);
+        }
+
         auto stagingBuffer = Buffer::CreateBuffer(imageSize, vk::BufferUsageFlagBits::eTransferSrc, vma::MemoryUsage::eCpuToGpu, 0, true);
 
-        stagingBuffer->Write(textureData, nullptr); // pass nullptr as command buffer as the staging buffer doesn't need it
+        stagingBuffer->Write(textureData, textureDataSize, 0u, nullptr); // pass nullptr as command buffer as the staging buffer doesn't need it
 
-        stagingBuffer->CopyToImage(shared_from_this(), aspectFlags, commandBuffer);
+        stagingBuffer->CopyToImage(shared_from_this(), aspectFlags, commandBuffer); // also tracks objects
 
         if (singleTime)
         {
             Graphics::EndSingleTimeCommands(commandBuffer);
         }
+    }
+
+    void Image::Write(const std::vector<uint8_t> &textureData, vk::ImageAspectFlags aspectFlags, Spinner::CommandBuffer::Pointer commandBuffer)
+    {
+        Write(textureData.data(), textureData.size(), aspectFlags, std::move(commandBuffer));
     }
 
     vk::ImageView Image::CreateImageView(vk::ImageAspectFlags imageAspectFlags, vk::ImageViewType imageViewType, std::optional<vk::ImageSubresourceRange> subresourceRange)
@@ -159,12 +173,12 @@ namespace Spinner
         return MainImageView;
     }
 
-    Image::Pointer Image::CreateImage(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
+    Image::Pointer Image::CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
     {
         return std::make_shared<Spinner::Image>(extent, format, usageFlags, imageType, tiling, mipLevels, memoryUsage);
     }
 
-    Image::Pointer Image::CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
+    Image::Pointer Image::CreateImage3D(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
     {
         return std::make_shared<Spinner::Image>(extent, format, usageFlags, imageType, tiling, mipLevels, memoryUsage);
     }
@@ -172,5 +186,132 @@ namespace Spinner
     vk::ImageTiling Image::GetImageTiling() const noexcept
     {
         return ImageTiling;
+    }
+
+    // Always loads as RGBA8 or RGBA16
+    std::vector<uint8_t> Image::DecodeEmbeddedImageData(const std::vector<uint8_t> &data, int &width, int &height, int &channels, bool &is16Bit)
+    {
+        if (data.size() > std::numeric_limits<int>::max())
+        {
+            throw std::runtime_error("Cannot decode image data of size " + std::to_string(data.size()) + " as it is too big");
+        }
+        int dataSize = static_cast<int>(data.size());
+        is16Bit = stbi_is_16_bit_from_memory(data.data(), dataSize);
+        if (is16Bit)
+        {
+            auto image = stbi_load_16_from_memory(data.data(), dataSize, &width, &height, &channels, STBI_rgb_alpha);
+            size_t imageSize = width * height * STBI_rgb_alpha * sizeof(stbi_us);
+
+            std::vector<uint8_t> decodedData = {reinterpret_cast<uint8_t *>(&image[0]), reinterpret_cast<uint8_t *>(&image[imageSize - 1])};
+
+            stbi_image_free(image);
+
+            channels = STBI_rgb_alpha;
+
+            return decodedData;
+        }
+
+        auto image = stbi_load_from_memory(data.data(), dataSize, &width, &height, &channels, STBI_rgb_alpha);
+        size_t imageSize = width * height * STBI_rgb_alpha * sizeof(stbi_uc);
+
+        std::vector<uint8_t> decodedData = {image[0], image[imageSize - 1]};
+
+        stbi_image_free(image);
+
+        channels = STBI_rgb_alpha;
+
+        return decodedData;
+    }
+
+    Image::Pointer Image::LoadFromEmbeddedImageData(const std::vector<uint8_t> &data, int mipLevels)
+    {
+        if (data.size() > std::numeric_limits<int>::max())
+        {
+            throw std::runtime_error("Cannot decode image data of size " + std::to_string(data.size()) + " as it is too big");
+        }
+        int dataSize = static_cast<int>(data.size());
+        bool is16Bit = stbi_is_16_bit_from_memory(data.data(), dataSize);
+        int width = 0, height = 0, channels = 0;
+
+        Image::Pointer image = nullptr;
+
+        if (is16Bit)
+        {
+            auto loadedImage = stbi_load_16_from_memory(data.data(), dataSize, &width, &height, &channels, STBI_rgb_alpha);
+            if (loadedImage != nullptr)
+            {
+                size_t imageSize = width * height * STBI_rgb_alpha * sizeof(stbi_us);
+
+                image = CreateImage({static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, vk::Format::eR16G16B16A16Unorm, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType::e2D, vk::ImageTiling::eOptimal, mipLevels, vma::MemoryUsage::eGpuOnly);
+                image->Write(reinterpret_cast<uint8_t *>(loadedImage), imageSize, vk::ImageAspectFlagBits::eColor, nullptr);
+
+                stbi_image_free(loadedImage);
+            }
+        }
+        else
+        {
+            auto loadedImage = stbi_load_from_memory(data.data(), dataSize, &width, &height, &channels, STBI_rgb_alpha);
+            if (loadedImage != nullptr)
+            {
+                size_t imageSize = width * height * STBI_rgb_alpha * sizeof(stbi_uc);
+
+                image = CreateImage({static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType::e2D, vk::ImageTiling::eOptimal, mipLevels, vma::MemoryUsage::eGpuOnly);
+                image->Write(reinterpret_cast<uint8_t *>(loadedImage), imageSize, vk::ImageAspectFlagBits::eColor, nullptr);
+
+                stbi_image_free(loadedImage);
+            }
+        }
+
+        return image;
+    }
+
+    Image::Pointer Image::LoadFromTextureFile(const std::string &textureFilename, uint32_t mipLevels)
+    {
+        std::string texturePath = GetAssetPath(AssetType::Texture, textureFilename);
+
+        if (!FileExists(texturePath))
+        {
+            throw std::runtime_error("Cannot create texture as it does not exist at " + texturePath);
+        }
+
+        Image::Pointer image;
+
+        int width = 0, height = 0, channels = 0;
+
+        int is16Bit = stbi_is_16_bit(texturePath.c_str());
+        if (is16Bit)
+        {
+            // 16 bit
+            stbi_us *loadedImage = stbi_load_16(texturePath.c_str(), &width, &height, &channels, STBI_rgb_alpha); // get RGBA16 out
+            if (loadedImage == nullptr)
+            {
+                throw std::runtime_error("Could not load texture from path " + texturePath);
+            }
+
+            image = Image::CreateImage({static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, vk::Format::eR16G16B16A16Uint, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType::e2D, vk::ImageTiling::eOptimal, mipLevels, vma::MemoryUsage::eGpuOnly);
+
+            auto pixels = reinterpret_cast<uint8_t *>(loadedImage);
+
+            image->Write(pixels, image->GetImageSize(), vk::ImageAspectFlagBits::eColor, nullptr);
+
+            stbi_image_free(loadedImage);
+        }
+        else
+        {
+            // 8 bit
+            stbi_uc *loadedImage = stbi_load(texturePath.c_str(), &width, &height, &channels, STBI_rgb_alpha); // get RGBA8 out
+            if (loadedImage == nullptr)
+            {
+                throw std::runtime_error("Could not load texture from path " + texturePath);
+            }
+
+            image = Image::CreateImage({static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType::e2D, vk::ImageTiling::eOptimal, mipLevels, vma::MemoryUsage::eGpuOnly);
+
+            image->Write(loadedImage, image->GetImageSize(), vk::ImageAspectFlagBits::eColor, nullptr);
+
+            stbi_image_free(loadedImage);
+        }
+
+        return image;
     }
 } // Spinner

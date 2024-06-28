@@ -80,6 +80,8 @@ namespace Spinner
 
     void App::AppInit()
     {
+        Texture::CreateDefaultTextures();
+
         RecreateDepthImage();
 
         RegisterCallback(Graphics->ResizedCallback, [this](int width, int height) -> void
@@ -95,9 +97,9 @@ namespace Spinner
 
         MeshData::StaticMeshVertex::CreateShaders();
 
-        auto suzanneObject = Scene::LoadModel("collection of things.glb");
+        auto testObject = Scene::LoadModel("Duck.glb");
 
-        if (!Scene->AddObjectToScene(suzanneObject))
+        if (!Scene->AddObjectToScene(testObject))
         {
             throw std::runtime_error("Model was unable to be loaded");
         }
@@ -117,6 +119,8 @@ namespace Spinner
     {
         ImGuiInstance.reset();
         DepthImage.reset();
+
+        Texture::ReleaseDefaultTextures();
 
         MeshData::StaticMeshVertex::DestroyShaders();
     }

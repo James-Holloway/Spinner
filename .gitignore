@@ -1,5 +1,6 @@
 vcpkg_installed/
 cmake-build-debug/
+cmake-build-release/
 imgui.ini
 .idea/
 
