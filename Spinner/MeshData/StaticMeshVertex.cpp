@@ -1,5 +1,7 @@
 #include "StaticMeshVertex.hpp"
 
+#include "../Lighting.hpp"
+
 namespace Spinner::MeshData
 {
     Shader::Pointer StaticMeshVertex::VertexShader;
@@ -32,7 +34,7 @@ namespace Spinner::MeshData
         return std::vector<vk::DescriptorSetLayoutBinding>{
                 vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
                 vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
-                vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment),
+                vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
         };
     }
 
@@ -44,18 +46,23 @@ namespace Spinner::MeshData
         // Descriptor Set Layout and push constants
         auto descriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(GetDescriptorSetLayoutBindings(), {});
 
+        // Lighting
+        auto lightingDescriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(Lighting::GetDescriptorSetLayoutBindings(), {}, Lighting::GetDescriptorBindingFlags());
+
         // Shader creation
         ShaderCreateInfo vertexShaderCreateInfo;
         vertexShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eVertex;
         vertexShaderCreateInfo.ShaderName = "staticmesh";
         vertexShaderCreateInfo.NextStage = vk::ShaderStageFlagBits::eFragment;
-        vertexShaderCreateInfo.DescriptorSetLayout = descriptorSetLayout;
+        vertexShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        vertexShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
 
         ShaderCreateInfo fragmentShaderCreateInfo;
         fragmentShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eFragment;
         fragmentShaderCreateInfo.ShaderName = "staticmesh";
         fragmentShaderCreateInfo.NextStage = {};
-        fragmentShaderCreateInfo.DescriptorSetLayout = descriptorSetLayout;
+        fragmentShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        fragmentShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
 
         auto shaders = Shader::CreateLinkedShaders({vertexShaderCreateInfo, fragmentShaderCreateInfo});
 

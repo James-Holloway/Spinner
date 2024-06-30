@@ -25,9 +25,11 @@ namespace Spinner
         std::string ShaderName;
         vk::ShaderStageFlagBits ShaderStage;
         vk::ShaderStageFlags NextStage;
-        DescriptorSetLayout::Pointer DescriptorSetLayout;
+        std::vector<DescriptorSetLayout::Pointer> DescriptorSetLayouts;
+        DescriptorSetLayout::Pointer LightingDescriptorSetLayout;
     };
 
+    // WARNING: Only takes push constants from the first descriptor set layout
     class Shader
     {
         friend class Graphics;
@@ -48,21 +50,28 @@ namespace Spinner
         [[nodiscard]] vk::ShaderStageFlagBits GetShaderStage() const;
         [[nodiscard]] vk::ShaderStageFlags GetNextStage() const;
         [[nodiscard]] vk::ShaderEXT GetVkShader() const;
-        [[nodiscard]] std::vector<vk::DescriptorSetLayoutBinding> GetDescriptorSetLayoutBindings() const;
-        [[nodiscard]] std::vector<vk::PushConstantRange> GetPushConstantRanges() const;
-        [[nodiscard]] const vk::DescriptorSetLayout &GetDescriptorSetLayout() const;
+        [[nodiscard]] std::vector<vk::DescriptorSetLayoutBinding> GetDescriptorSetLayoutBindings(uint32_t index) const;
+        [[nodiscard]] std::vector<vk::PushConstantRange> GetPushConstantRanges(uint32_t index) const;
+        [[nodiscard]] vk::DescriptorSetLayout GetDescriptorSetLayout(uint32_t index) const;
+        [[nodiscard]] std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
+        [[nodiscard]] vk::DescriptorSetLayout GetLightingDescriptorSetLayout() const;
+        [[nodiscard]] uint32_t GetLightingDescriptorSetIndex() const;
+        [[nodiscard]] vk::PipelineLayout GetPipelineLayout() const;
 
         constexpr static const uint32_t InvalidBindingIndex = 0xFFFF'FFFF;
 
-        uint32_t GetBindingFromIndex(uint32_t indexOfType, vk::DescriptorType type);
-        uint32_t GetBindingFromIndex(uint32_t indexOfType, const std::vector<vk::DescriptorType> &types);
+        uint32_t GetBindingFromIndex(uint32_t set, uint32_t indexOfType, vk::DescriptorType type);
+        uint32_t GetBindingFromIndex(uint32_t set, uint32_t indexOfType, const std::vector<vk::DescriptorType> &types);
 
     protected:
         std::string ShaderName;
         vk::ShaderStageFlagBits ShaderStage;
         vk::ShaderStageFlags NextStage;
         vk::ShaderEXT VkShader;
-        DescriptorSetLayout::Pointer DescriptorSetLayout;
+        std::vector<DescriptorSetLayout::Pointer> DescriptorSetLayouts;
+        DescriptorSetLayout::Pointer LightingDescriptorSetLayout;
+        vk::PipelineLayout VkPipelineLayout;
+        uint32_t LightingDescriptorSetIndex = InvalidBindingIndex;
 
     public:
         static Pointer CreateShader(const ShaderCreateInfo &createInfo);
@@ -101,17 +110,16 @@ namespace Spinner
         [[nodiscard]] Spinner::Shader::Pointer GetShader() const;
         [[nodiscard]] Spinner::DescriptorPool::Pointer GetDescriptorPool() const;
 
-        [[nodiscard]] std::optional<vk::DescriptorType> GetDescriptorTypeOfBinding(uint32_t binding) const;
+        [[nodiscard]] std::optional<vk::DescriptorType> GetDescriptorTypeOfBinding(uint32_t binding, uint32_t set = 0) const;
         [[nodiscard]] std::vector<vk::DescriptorSet> GetDescriptorSets(uint32_t currentFrame) const;
-        void UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer) const;
-        void UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal) const;
-
-        void UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal) const;
+        [[nodiscard]] vk::DescriptorSet GetDescriptorSet(uint32_t currentFrame, uint32_t set = 0) const;
+        void UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer, uint32_t set = 0) const;
+        void UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal, uint32_t set = 0) const;
+        void UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal, uint32_t set = 0) const;
 
     protected:
         Spinner::Shader::Pointer Shader;
         Spinner::DescriptorPool::Pointer DescriptorPool;
-        vk::PipelineLayout VkPipelineLayout;
         std::array<std::vector<vk::DescriptorSet>, MAX_FRAMES_IN_FLIGHT> VkDescriptorSets;
 
     public:

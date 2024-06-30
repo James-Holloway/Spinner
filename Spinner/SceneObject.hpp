@@ -103,6 +103,11 @@ namespace Spinner
 
         std::shared_ptr<Scene> GetSceneParent();
 
+        [[nodiscard]] std::vector<Pointer> GetChildren() const;
+        size_t GetChildrenCount() const;
+        Pointer GetChildByIndex(size_t index) const;
+        Pointer GetFirstChildWithName(const std::string &name) const;
+
     protected:
         void SetWorldMatrixDirty();
         void SetSceneParentDirty();

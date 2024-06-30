@@ -12,7 +12,7 @@ namespace Spinner
     public:
         using Pointer = std::shared_ptr<DescriptorSetLayout>;
 
-        explicit DescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges = {});
+        explicit DescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges = {}, const std::vector<vk::DescriptorBindingFlags> &layoutBindingFlags = {});
         ~DescriptorSetLayout();
 
         [[nodiscard]] const vk::DescriptorSetLayout &GetDescriptorSetLayout() const;
@@ -23,9 +23,10 @@ namespace Spinner
         vk::DescriptorSetLayout VkDescriptorSetLayout;
         std::vector<vk::DescriptorSetLayoutBinding> DescriptorSetLayoutBindings;
         std::vector<vk::PushConstantRange> PushConstantRanges;
+        std::vector<vk::DescriptorBindingFlags> DescriptorSetLayoutBindingFlags;
 
     public:
-        static Pointer CreateDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges = {});
+        [[nodiscard]] static Pointer CreateDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges = {}, const std::vector<vk::DescriptorBindingFlags> &layoutBindingFlags = {});
     };
 
 } // Spinner

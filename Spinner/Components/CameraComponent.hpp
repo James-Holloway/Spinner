@@ -13,7 +13,7 @@ namespace Spinner
         class CameraComponent : public Component
         {
         public:
-            explicit CameraComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex);
+            CameraComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex);
 
         protected:
             float FOV = 70.0f;

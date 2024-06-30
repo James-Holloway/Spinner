@@ -581,7 +581,7 @@ namespace Spinner
         return GraphicsQueue;
     }
 
-    uint32_t Graphics::GetGraphicsQueueFamily()
+    uint32_t Graphics::GetGraphicsQueueFamily() const
     {
         return GraphicsQueueFamilyIndex;
     }

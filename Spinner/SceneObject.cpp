@@ -382,5 +382,31 @@ namespace Spinner
         return std::make_shared<Spinner::SceneObject>(name);
     }
 
+    std::vector<SceneObject::Pointer> SceneObject::GetChildren() const
+    {
+        return Children;
+    }
+
+    SceneObject::Pointer SceneObject::GetFirstChildWithName(const std::string &name) const
+    {
+        for (auto &child : Children)
+        {
+            if (child->GetName() == name)
+            {
+                return child;
+            }
+        }
+        return nullptr;
+    }
+
+    size_t SceneObject::GetChildrenCount() const
+    {
+        return Children.size();
+    }
+
+    SceneObject::Pointer SceneObject::GetChildByIndex(size_t index) const
+    {
+        return Children.at(index);
+    }
 
 } // Spinner

@@ -5,6 +5,7 @@
 #include "../CommandBuffer.hpp"
 #include "../VulkanInstance.hpp"
 #include "../Scene.hpp"
+#include "../Lighting.hpp"
 
 namespace Spinner::Components
 {
@@ -99,6 +100,15 @@ namespace Spinner::Components
 
             // Update textures
             Material->ApplyTextures(FragmentShaderInstance);
+        }
+
+        // Update lighting (lights + shadows), if applicable
+        auto lighting = scene->GetLighting();
+        auto lightingSetIndex = FragmentShaderInstance->GetShader()->GetLightingDescriptorSetIndex();
+        if (lighting != nullptr && lightingSetIndex != Shader::InvalidBindingIndex)
+        {
+            // Do only shadows if constant bindings aren't marked dirty
+            lighting->UpdateDescriptors(FragmentShaderInstance->GetDescriptorSet(currentFrame, lightingSetIndex), !ConstantBindingsDirty[currentFrame]);
         }
 
         // Used for updating each frame

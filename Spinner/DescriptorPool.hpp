@@ -20,9 +20,9 @@ namespace Spinner
         DescriptorPool(const std::vector<vk::DescriptorPoolSize> &sizes, uint32_t maxSets);
         ~DescriptorPool();
 
-        std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::shared_ptr<Shader> &shader);
-        std::vector<vk::DescriptorSet> AllocateDescriptorSets(vk::DescriptorSetLayout layout);
-        void FreeDescriptorSets(const vk::ArrayProxy<vk::DescriptorSet> &sets);
+        [[nodiscard]] std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::shared_ptr<Shader> &shader) const;
+        [[nodiscard]] std::vector<vk::DescriptorSet> AllocateDescriptorSets(const vk::ArrayProxy<vk::DescriptorSetLayout>& layouts) const;
+        void FreeDescriptorSets(const vk::ArrayProxy<vk::DescriptorSet> &sets) const;
 
     public:
         vk::DescriptorPool VkDescriptorPool;
@@ -30,7 +30,7 @@ namespace Spinner
         uint32_t MaxSets;
 
     public:
-        static Pointer CreateDefault();
+        static Pointer CreateDefault(uint32_t poolSize = 1000u);
     };
 
 } // Spinner

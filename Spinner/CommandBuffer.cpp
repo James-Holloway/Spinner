@@ -196,7 +196,7 @@ namespace Spinner
     void CommandBuffer::BindShaderInstanceDescriptors(const ShaderInstance::Pointer &shaderInstance, vk::PipelineBindPoint bindPoint)
     {
         TrackObject(shaderInstance);
-        BindDescriptors(shaderInstance->VkPipelineLayout, 0, shaderInstance->GetDescriptorSets(Graphics::GetCurrentFrame()), bindPoint);
+        BindDescriptors(shaderInstance->GetShader()->GetPipelineLayout(), 0, shaderInstance->GetDescriptorSets(Graphics::GetCurrentFrame()), bindPoint);
     }
 
     void CommandBuffer::InsertImageMemoryBarrier(vk::Image image, vk::AccessFlags2 srcAccessMask, vk::AccessFlags2 dstAccessMask, vk::ImageLayout oldImageLayout, vk::ImageLayout newImageLayout, vk::PipelineStageFlags2 srcStageMask, vk::PipelineStageFlags2 dstStageMask, vk::ImageSubresourceRange subresourceRange)
@@ -221,7 +221,7 @@ namespace Spinner
     {
         if (!subresourceRange.has_value())
         {
-            subresourceRange = subresourceRange = vk::ImageSubresourceRange(aspectFlags, 0, 1, 0, 1);
+            subresourceRange = vk::ImageSubresourceRange(aspectFlags, 0, 1, 0, 1);
         }
 
         vk::ImageMemoryBarrier2 barrier;

@@ -12,7 +12,10 @@
 namespace Spinner
 {
     class CommandBuffer;
+
     class Scene;
+
+    class Lighting;
 
     namespace Components
     {
@@ -21,7 +24,7 @@ namespace Spinner
         public:
             using ConstantBufferType = MeshConstants;
 
-            explicit MeshComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex);
+            MeshComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex);
 
         protected:
             Spinner::ShaderInstance::Pointer VertexShaderInstance;
@@ -45,9 +48,9 @@ namespace Spinner
             void SetMeshBuffer(Spinner::MeshBuffer::Pointer newMeshBuffer);
 
             [[nodiscard]] Spinner::Material::Pointer GetMaterial();
-            void SetMaterial(const Spinner::Material::Pointer& material);
+            void SetMaterial(const Spinner::Material::Pointer &material);
 
-            void Update(const std::shared_ptr<Scene>& scene, uint32_t currentFrame);
+            void Update(const std::shared_ptr<Scene> &scene, uint32_t currentFrame);
             void Draw(const std::shared_ptr<CommandBuffer> &commandBuffer);
 
             void PopulateFromShaders(const Spinner::Shader::Pointer &vertexShader, const Spinner::Shader::Pointer &fragmentShader, const Spinner::DescriptorPool::Pointer &descriptorPool);

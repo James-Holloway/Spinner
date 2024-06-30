@@ -32,7 +32,7 @@ namespace Spinner
         for (uint32_t textureIndex = 0; textureIndex < MaxBoundTextures; textureIndex++)
         {
             auto &texture = Textures.at(textureIndex);
-            uint32_t binding = shader->GetBindingFromIndex(textureIndex, vk::DescriptorType::eCombinedImageSampler);
+            uint32_t binding = shader->GetBindingFromIndex(0u, textureIndex, vk::DescriptorType::eCombinedImageSampler);
             if (binding == Shader::InvalidBindingIndex)
             {
                 // Return early if the binding could not be found from the index and type

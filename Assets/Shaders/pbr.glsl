@@ -1,5 +1,6 @@
-#define ambient 0.005
-#define shadowed 0.005
+#ifndef PBR_AMBIENT_LIGHT
+#define PBR_AMBIENT_LIGHT 0.005
+#endif
 
 const float PI = 3.14159265359;
 
@@ -55,7 +56,7 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, float metallic, float roughness, vec3 material
 		vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);
 		vec3 kD = (vec3(1.0) - F) * (1.0 - metallic);
 
-		color += (kD * materialColor / PI + spec) * dotNL * lightColor;
+		color = (kD * materialColor / PI + spec) * dotNL * lightColor;
 	}
 
 	return color;

@@ -8,9 +8,12 @@
 #include "MeshBuilder.hpp"
 #include "MeshData/StaticMeshVertex.hpp"
 #include "Components/CameraComponent.hpp"
+#include "Components/LightComponent.hpp"
 #include "Material.hpp"
 #include "Image.hpp"
 #include "Texture.hpp"
+#include "Lighting.hpp"
+#include "Graphics.hpp"
 
 namespace Spinner
 {
@@ -18,6 +21,8 @@ namespace Spinner
     {
         ObjectTree = std::make_shared<Spinner::SceneObject>("Scene root", true);
         SceneBuffer = Buffer::CreateBuffer(sizeof(SceneConstants), vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst, vma::MemoryUsage::eCpuToGpu, 0, true);
+
+        Lighting = GetGlobalLighting();
     }
 
     bool Scene::AddObjectToScene(const SceneObject::Pointer &object, SceneObject::Pointer parent)
@@ -51,6 +56,10 @@ namespace Spinner
         // Update scene constants
         UpdateSceneConstants(sceneConstants);
 
+        glm::vec3 viewerPosition = sceneConstants.CameraPosition;
+
+        std::vector<Components::LightComponent *> activeLightComponents;
+
         // Update mesh constants
         auto sharedThis = shared_from_this();
         ObjectTree->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
@@ -67,11 +76,20 @@ namespace Spinner
                 meshComponent->Update(sharedThis, currentFrame);
             }
 
+            // Get active light components
+            auto lightComponents = sceneObject->GetComponentRawPointers<Components::LightComponent>();
+            for (auto &lightComponent : lightComponents)
+            {
+                activeLightComponents.push_back(lightComponent);
+            }
+
             return true;
         });
+
+        Lighting->UpdateLights(viewerPosition, activeLightComponents);
     }
 
-    void Scene::Draw(CommandBuffer::Pointer &commandBuffer)
+    void Scene::Draw(uint32_t currentFrame, CommandBuffer::Pointer &commandBuffer)
     {
         // Only draw when active
         if (!IsActive())
@@ -85,23 +103,33 @@ namespace Spinner
         }
 
         // TODO transparent pass
-        std::vector<Components::MeshComponent *> toDrawOpaque;
+        std::map<std::string, std::vector<Components::MeshComponent *>> toDrawOpaque;
         ObjectTree->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
         {
             auto meshComponents = sceneObject->GetComponentRawPointers<Components::MeshComponent>();
             for (auto &meshComponent : meshComponents)
             {
-                toDrawOpaque.push_back(meshComponent);
+                auto shaderName = meshComponent->GetFragmentShaderInstance()->GetShader()->GetShaderName();
+                toDrawOpaque[shaderName].push_back(meshComponent);
             }
 
             return true;
         });
 
         // Opaque pass
-        for (auto &meshComponent : toDrawOpaque)
+        Shader::Pointer prevFragShader = nullptr;
+        for (auto &shaderComponentPair : toDrawOpaque)
         {
-            meshComponent->Draw(commandBuffer);
+            if (shaderComponentPair.second.empty())
+                continue;
+
+            for (auto &meshComponent : shaderComponentPair.second)
+            {
+                meshComponent->Draw(commandBuffer);
+            }
         }
+
+        // TODO transparent pass
     }
 
     struct MeshInformation
@@ -715,6 +743,11 @@ namespace Spinner
         SceneBuffer->Write<SceneConstants>(LocalSceneBuffer);
     }
 
+    std::shared_ptr<Spinner::Lighting> Scene::GetLighting() const noexcept
+    {
+        return Lighting;
+    }
+
     SceneObject::Pointer Scene::GetObjectTree()
     {
         if (!HasSetObjectTreeScene)
@@ -724,6 +757,21 @@ namespace Spinner
         }
 
         return ObjectTree;
+    }
+
+    std::weak_ptr<Spinner::Lighting> Scene::GlobalLighting = {};
+
+    std::shared_ptr<Spinner::Lighting> Scene::GetGlobalLighting()
+    {
+        if (GlobalLighting.expired())
+        {
+            auto descriptorPool = DescriptorPool::CreateDefault(32);
+            auto lighting = Lighting::CreateLighting();
+            GlobalLighting = lighting;
+            return lighting;
+        }
+
+        return GlobalLighting.lock();
     }
 
 } // Spinner

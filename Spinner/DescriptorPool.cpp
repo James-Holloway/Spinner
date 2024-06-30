@@ -25,10 +25,10 @@ namespace Spinner
         }
     }
 
-    DescriptorPool::Pointer DescriptorPool::CreateDefault()
+    DescriptorPool::Pointer DescriptorPool::CreateDefault(uint32_t poolSize)
     {
-        constexpr uint32_t DefaultPoolSize = 1000u * MAX_FRAMES_IN_FLIGHT;
-        constexpr uint32_t DefaultMaxSets = 1000u;
+        uint32_t DefaultPoolSize = poolSize * MAX_FRAMES_IN_FLIGHT;
+        uint32_t DefaultMaxSets = poolSize;
 
         static std::vector<vk::DescriptorPoolSize> sizes{
                 {vk::DescriptorType::eSampler,              DefaultPoolSize},
@@ -47,22 +47,22 @@ namespace Spinner
         return std::make_shared<Spinner::DescriptorPool>(sizes, DefaultMaxSets);
     }
 
-    std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(const std::shared_ptr<Shader> &shader)
+    std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(const std::shared_ptr<Shader> &shader) const
     {
-        return AllocateDescriptorSets(shader->GetDescriptorSetLayout());
+        return AllocateDescriptorSets(shader->GetDescriptorSetLayouts());
     }
 
-    std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(vk::DescriptorSetLayout layout)
+    std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(const vk::ArrayProxy<vk::DescriptorSetLayout> &layouts) const
     {
         // Descriptor Sets
         vk::DescriptorSetAllocateInfo allocateInfo;
         allocateInfo.descriptorPool = VkDescriptorPool;
-        allocateInfo.setSetLayouts(layout);
+        allocateInfo.setSetLayouts(layouts);
 
         return Graphics::GetDevice().allocateDescriptorSets(allocateInfo);
     }
 
-    void DescriptorPool::FreeDescriptorSets(const vk::ArrayProxy<vk::DescriptorSet> &sets)
+    void DescriptorPool::FreeDescriptorSets(const vk::ArrayProxy<vk::DescriptorSet> &sets) const
     {
         Graphics::GetDevice().freeDescriptorSets(VkDescriptorPool, sets);
     }

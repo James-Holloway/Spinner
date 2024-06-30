@@ -71,7 +71,7 @@ namespace Spinner
         void DrawFrame();
         std::shared_ptr<Spinner::Window> GetMainWindow();
         vk::Queue GetGraphicsQueue();
-        uint32_t GetGraphicsQueueFamily();
+        [[nodiscard]] uint32_t GetGraphicsQueueFamily() const;
         Spinner::Swapchain* GetSwapchainRawPointer();
         static uint32_t GetCurrentFrame();
         vk::Format FindSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);

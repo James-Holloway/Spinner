@@ -13,12 +13,26 @@ namespace Spinner
         ShaderStage = createInfo.ShaderStage;
         NextStage = createInfo.NextStage;
         ShaderName = createInfo.ShaderName;
-        DescriptorSetLayout = createInfo.DescriptorSetLayout;
+        DescriptorSetLayouts = createInfo.DescriptorSetLayouts;
 
-        if (DescriptorSetLayout == nullptr)
+        if (DescriptorSetLayouts.empty())
         {
             throw std::runtime_error("Cannot create a shader with an invalid DescriptorSetLayout from ShaderCreateInfo");
         }
+
+        // Pipeline layout
+        auto pushConstants = GetPushConstantRanges(0); // WARNING: Only takes push constants from the first descriptor set layout
+        if (createInfo.LightingDescriptorSetLayout != nullptr)
+        {
+            LightingDescriptorSetIndex = static_cast<uint32_t>(DescriptorSetLayouts.size());
+            DescriptorSetLayouts.push_back(createInfo.LightingDescriptorSetLayout);
+        }
+
+        std::vector<vk::DescriptorSetLayout> layouts = GetDescriptorSetLayouts();
+        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+        pipelineLayoutCreateInfo.setSetLayouts(layouts);
+        pipelineLayoutCreateInfo.setPushConstantRanges(pushConstants);
+        VkPipelineLayout = Graphics::GetDevice().createPipelineLayout(pipelineLayoutCreateInfo);
     }
 
     Shader::~Shader()
@@ -30,7 +44,14 @@ namespace Spinner
             device.destroyShaderEXT(VkShader, nullptr, VulkanInstance::GetDispatchLoader());
         }
 
-        DescriptorSetLayout.reset();
+        if (VkPipelineLayout)
+        {
+            device.destroyPipelineLayout(VkPipelineLayout);
+            VkPipelineLayout = nullptr;
+        }
+
+        LightingDescriptorSetLayout.reset();
+        DescriptorSetLayouts.clear();
     }
 
     Shader::Pointer Shader::CreateShader(const ShaderCreateInfo &createInfo)
@@ -48,6 +69,8 @@ namespace Spinner
 
         auto shader = std::make_shared<Shader>(createInfo);
 
+        auto descriptorSetLayouts = shader->GetDescriptorSetLayouts();
+
         vk::ShaderCreateInfoEXT shaderCreateInfo;
         shaderCreateInfo.flags = {};
         shaderCreateInfo.stage = createInfo.ShaderStage;
@@ -55,7 +78,7 @@ namespace Spinner
         shaderCreateInfo.codeType = vk::ShaderCodeTypeEXT::eSpirv;
         shaderCreateInfo.pName = "main";
         shaderCreateInfo.setCode<char>(shaderSPIRV);
-        shaderCreateInfo.setSetLayouts(shader->GetDescriptorSetLayout());
+        shaderCreateInfo.setSetLayouts(descriptorSetLayouts);
         shader->VkShader = device.createShaderEXT(shaderCreateInfo, nullptr, VulkanInstance::GetDispatchLoader());
 
         return shader;
@@ -97,8 +120,11 @@ namespace Spinner
 
         std::vector<vk::ShaderCreateInfoEXT> shaderCreateInfos;
         shaderCreateInfos.reserve(createInfos.size());
+        std::vector<std::vector<vk::DescriptorSetLayout>> descriptorSetLayouts(shaders.size(), std::vector<vk::DescriptorSetLayout>{});
         for (int i = 0; i < createInfos.size(); i++)
         {
+            descriptorSetLayouts[i] = shaders[i]->GetDescriptorSetLayouts();
+
             vk::ShaderCreateInfoEXT shaderCreateInfo;
 
             shaderCreateInfo.flags = vk::ShaderCreateFlagBitsEXT::eLinkStage;
@@ -108,7 +134,7 @@ namespace Spinner
             shaderCreateInfo.pName = "main";
             shaderCreateInfo.pCode = shaderSPIRVs[i].data();
             shaderCreateInfo.codeSize = shaderSPIRVs[i].size();
-            shaderCreateInfo.setSetLayouts(shaders[i]->GetDescriptorSetLayout());
+            shaderCreateInfo.setSetLayouts(descriptorSetLayouts[i]);
 
             shaderCreateInfos.push_back(shaderCreateInfo);
         }
@@ -143,25 +169,50 @@ namespace Spinner
         return VkShader;
     }
 
-    std::vector<vk::DescriptorSetLayoutBinding> Shader::GetDescriptorSetLayoutBindings() const
+    std::vector<vk::DescriptorSetLayoutBinding> Shader::GetDescriptorSetLayoutBindings(uint32_t index) const
     {
-        return DescriptorSetLayout->GetDescriptorSetLayoutBindings();
+        return DescriptorSetLayouts.at(index)->GetDescriptorSetLayoutBindings();
     }
 
-    std::vector<vk::PushConstantRange> Shader::GetPushConstantRanges() const
+    std::vector<vk::PushConstantRange> Shader::GetPushConstantRanges(uint32_t index) const
     {
-        return DescriptorSetLayout->GetPushConstantRanges();
+        return DescriptorSetLayouts.at(index)->GetPushConstantRanges();
     }
 
-    const vk::DescriptorSetLayout &Shader::GetDescriptorSetLayout() const
+    vk::DescriptorSetLayout Shader::GetDescriptorSetLayout(uint32_t index) const
     {
-        return DescriptorSetLayout->GetDescriptorSetLayout();
+        return DescriptorSetLayouts.at(index)->GetDescriptorSetLayout();
     }
 
-    uint32_t Shader::GetBindingFromIndex(uint32_t indexOfType, vk::DescriptorType type)
+    std::vector<vk::DescriptorSetLayout> Shader::GetDescriptorSetLayouts() const
+    {
+        std::vector<vk::DescriptorSetLayout> layouts;
+        layouts.reserve(DescriptorSetLayouts.size());
+        for (auto &setLayout : DescriptorSetLayouts)
+        {
+            layouts.push_back(setLayout->GetDescriptorSetLayout());
+        }
+        return layouts;
+    }
+
+    vk::DescriptorSetLayout Shader::GetLightingDescriptorSetLayout() const
+    {
+        if (LightingDescriptorSetLayout == nullptr)
+        {
+            return nullptr;
+        }
+        return LightingDescriptorSetLayout->GetDescriptorSetLayout();
+    }
+
+    vk::PipelineLayout Shader::GetPipelineLayout() const
+    {
+        return VkPipelineLayout;
+    }
+
+    uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, vk::DescriptorType type)
     {
         size_t index = 0;
-        auto bindings = GetDescriptorSetLayoutBindings();
+        auto bindings = GetDescriptorSetLayoutBindings(set);
         for (auto &binding : bindings)
         {
             bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
@@ -179,10 +230,10 @@ namespace Spinner
         return InvalidBindingIndex;
     }
 
-    uint32_t Shader::GetBindingFromIndex(uint32_t indexOfType, const std::vector<vk::DescriptorType> &types)
+    uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, const std::vector<vk::DescriptorType> &types)
     {
         size_t index = 0;
-        auto bindings = GetDescriptorSetLayoutBindings();
+        auto bindings = GetDescriptorSetLayoutBindings(set);
         for (auto &binding : bindings)
         {
             bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
@@ -198,6 +249,11 @@ namespace Spinner
         }
 
         return InvalidBindingIndex;
+    }
+
+    uint32_t Shader::GetLightingDescriptorSetIndex() const
+    {
+        return LightingDescriptorSetIndex;
     }
 
     ShaderInstance::ShaderInstance(const ShaderInstanceCreateInfo &createInfo)
@@ -228,8 +284,6 @@ namespace Spinner
 
     ShaderInstance::~ShaderInstance()
     {
-        auto &device = Graphics::GetDevice();
-
         for (auto &sets : VkDescriptorSets)
         {
             if (!sets.empty())
@@ -237,12 +291,6 @@ namespace Spinner
                 DescriptorPool->FreeDescriptorSets(sets);
             }
             sets.clear();
-        }
-
-        if (VkPipelineLayout)
-        {
-            device.destroyPipelineLayout(VkPipelineLayout);
-            VkPipelineLayout = nullptr;
         }
     }
 
@@ -273,14 +321,6 @@ namespace Spinner
 
     void ShaderInstance::CreateDescriptors()
     {
-        auto pushConstantRanges = Shader->GetPushConstantRanges();
-
-        // Pipeline layout
-        vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
-        pipelineLayoutCreateInfo.setSetLayouts(Shader->GetDescriptorSetLayout());
-        pipelineLayoutCreateInfo.setPushConstantRanges(pushConstantRanges);
-        VkPipelineLayout = Graphics::GetDevice().createPipelineLayout(pipelineLayoutCreateInfo);
-
         // Descriptor Sets
         for (auto &sets : VkDescriptorSets)
         {
@@ -313,9 +353,14 @@ namespace Spinner
         return VkDescriptorSets.at(currentFrame);
     }
 
-    std::optional<vk::DescriptorType> ShaderInstance::GetDescriptorTypeOfBinding(uint32_t binding) const
+    vk::DescriptorSet ShaderInstance::GetDescriptorSet(uint32_t currentFrame, uint32_t set) const
     {
-        auto layoutBindings = Shader->GetDescriptorSetLayoutBindings();
+        return VkDescriptorSets.at(currentFrame).at(set);
+    }
+
+    std::optional<vk::DescriptorType> ShaderInstance::GetDescriptorTypeOfBinding(uint32_t binding, uint32_t set) const
+    {
+        auto layoutBindings = Shader->GetDescriptorSetLayoutBindings(set);
 
         for (const vk::DescriptorSetLayoutBinding &layoutBinding : layoutBindings)
         {
@@ -328,7 +373,7 @@ namespace Spinner
         return {};
     }
 
-    void ShaderInstance::UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer) const
+    void ShaderInstance::UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer, uint32_t set) const
     {
         auto descriptorType = GetDescriptorTypeOfBinding(binding);
         if (!descriptorType.has_value())
@@ -344,7 +389,7 @@ namespace Spinner
         bufferInfo.range = vk::WholeSize;
 
         vk::WriteDescriptorSet writeDescriptorSet;
-        writeDescriptorSet.dstSet = sets.at(0); // WARNING: only one set is bound currently (check CreateDescriptors)
+        writeDescriptorSet.dstSet = sets.at(set); // WARNING: only one set is bound currently (check CreateDescriptors)
         writeDescriptorSet.dstBinding = binding;
         writeDescriptorSet.dstArrayElement = 0;
         writeDescriptorSet.descriptorType = descriptorType.value();
@@ -359,17 +404,17 @@ namespace Spinner
         return std::make_shared<ShaderInstance>(shader, descriptorPool);
     }
 
-    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout) const
+    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout, uint32_t set) const
     {
         assert(texture != nullptr);
         assert(texture->GetImage() != nullptr);
         assert(texture->GetImage()->GetMainImageView() != nullptr);
         assert(texture->GetSampler() != nullptr);
 
-        UpdateDescriptorImage(currentFrame, binding, texture->GetImage()->GetMainImageView(), texture->GetSampler()->GetSampler());
+        UpdateDescriptorImage(currentFrame, binding, texture->GetImage()->GetMainImageView(), texture->GetSampler()->GetSampler(), imageLayout, set);
     }
 
-    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout) const
+    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout, uint32_t set) const
     {
         auto descriptorType = GetDescriptorTypeOfBinding(binding);
         if (!descriptorType.has_value())
@@ -385,7 +430,7 @@ namespace Spinner
         imageInfo.sampler = sampler;
 
         vk::WriteDescriptorSet writeDescriptorSet;
-        writeDescriptorSet.dstSet = sets.at(0); // WARNING: only one set is bound currently (check CreateDescriptors)
+        writeDescriptorSet.dstSet = sets.at(set); // WARNING: only one set is bound currently (check CreateDescriptors)
         writeDescriptorSet.dstBinding = binding;
         writeDescriptorSet.dstArrayElement = 0;
         writeDescriptorSet.descriptorType = descriptorType.value();

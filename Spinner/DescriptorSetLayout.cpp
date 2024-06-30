@@ -4,11 +4,27 @@
 
 namespace Spinner
 {
-    DescriptorSetLayout::DescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges) : DescriptorSetLayoutBindings(layoutBindings), PushConstantRanges(pushConstantRanges)
+    DescriptorSetLayout::DescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges, const std::vector<vk::DescriptorBindingFlags> &layoutBindingFlags) : DescriptorSetLayoutBindings(layoutBindings), PushConstantRanges(pushConstantRanges), DescriptorSetLayoutBindingFlags(layoutBindingFlags)
     {
+        vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlags;
+        bindingFlags.setBindingFlags(layoutBindingFlags);
+
         // Descriptor set layout
         vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo;
         descriptorSetLayoutCreateInfo.setBindings(DescriptorSetLayoutBindings);
+
+        if (!layoutBindingFlags.empty())
+        {
+            descriptorSetLayoutCreateInfo.setPNext(&bindingFlags);
+            for (auto flag : layoutBindingFlags)
+            {
+                if ((flag & vk::DescriptorBindingFlagBits::eUpdateAfterBind) != vk::DescriptorBindingFlags{})
+                {
+                    descriptorSetLayoutCreateInfo.flags |= vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
+                }
+            }
+        }
+
         VkDescriptorSetLayout = Graphics::GetDevice().createDescriptorSetLayout(descriptorSetLayoutCreateInfo);
     }
 
@@ -35,9 +51,9 @@ namespace Spinner
         return PushConstantRanges;
     }
 
-    DescriptorSetLayout::Pointer DescriptorSetLayout::CreateDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges)
+    DescriptorSetLayout::Pointer DescriptorSetLayout::CreateDescriptorSetLayout(const std::vector<vk::DescriptorSetLayoutBinding> &layoutBindings, const std::vector<vk::PushConstantRange> &pushConstantRanges, const std::vector<vk::DescriptorBindingFlags> &layoutBindingFlags)
     {
-        return std::make_shared<Spinner::DescriptorSetLayout>(layoutBindings, pushConstantRanges);
+        return std::make_shared<Spinner::DescriptorSetLayout>(layoutBindings, pushConstantRanges, layoutBindingFlags);
     }
 
 } // Spinner

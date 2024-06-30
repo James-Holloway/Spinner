@@ -9,10 +9,11 @@
 #include "ImGuiInstance.hpp"
 #include "Image.hpp"
 #include "VulkanUtilities.hpp"
+#include "Lighting.hpp"
 
 namespace Spinner
-{
 
+{
     class App : public Object
     {
     public:
@@ -24,8 +25,10 @@ namespace Spinner
         std::shared_ptr<Spinner::Graphics> Graphics;
         Spinner::Scene::Pointer Scene;
         Spinner::ImGuiInstance::Pointer ImGuiInstance;
+        Spinner::Lighting::Pointer Lighting;
 
         Spinner::SceneObject::WeakPointer CameraObject;
+        Spinner::SceneObject::WeakPointer LightObject;
         Spinner::Image::Pointer DepthImage;
 
     public:

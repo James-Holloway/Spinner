@@ -33,7 +33,7 @@ namespace Spinner
         {
             FunctionType Callback;
             CallbackOwnerToken::WeakPointer Token;
-            bool Unowned;
+            bool Unowned = true;
         };
 
     protected:
