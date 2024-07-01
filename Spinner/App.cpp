@@ -111,17 +111,13 @@ namespace Spinner
         cameraObject->SetLocalPosition({0, 0, 5});
         cameraObject->SetLocalRotation({1, 0, 0, 0});
         cameraObject->SetLocalEulerRotation({0, 180, 0});
-
         Scene->AddObjectToScene(cameraObject);
-        CameraObject = cameraObject;
 
         auto lightObject = SceneObject::Create("Point light");
         auto light = lightObject->AddComponent<Components::LightComponent>();
         light->SetLightType(LightType::Point);
         lightObject->SetLocalPosition({0, 5, 0});
-
         Scene->AddObjectToScene(lightObject);
-        LightObject = lightObject;
     }
 
     void App::AppCleanup()
@@ -227,99 +223,27 @@ namespace Spinner
 
         Scene->Update(Graphics->CurrentFrame);
 
-        if (!CameraObject.expired())
+        auto extentUint = Graphics::GetSwapchainExtent();
+        auto extentImGui = ImVec2(static_cast<float>(extentUint.width), static_cast<float>(extentUint.height));
+
+        if (ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
         {
-            auto cameraObject = CameraObject.lock();
-            auto cameraComponentOptional = cameraObject->GetFirstComponent<Components::CameraComponent>();
+            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+            ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
 
-            if (cameraComponentOptional.has_value() && ImGui::Begin("Camera Properties"))
-            {
-                auto cameraComponent = cameraComponentOptional.value();
-                glm::vec3 cameraPosition = cameraObject->GetLocalPosition();
-                if (ImGui::DragFloat3("Position", &cameraPosition.x, 0.05f))
-                {
-                    cameraObject->SetLocalPosition(cameraPosition);
-                }
+            Scene->RenderHierarchy();
 
-                glm::quat cameraRotation = cameraObject->GetLocalRotation();
-                if (ImGui::DragFloat4("Rotation", &cameraRotation.x, 0.01f))
-                {
-                    cameraObject->SetLocalRotation(cameraRotation);
-                }
-
-                glm::vec3 cameraEulerRotation = cameraObject->GetLocalEulerRotation();
-                if (ImGui::DragFloat3("Euler Rotation", &cameraEulerRotation.x, 0.1f))
-                {
-                    cameraObject->SetLocalEulerRotation(cameraEulerRotation);
-                }
-
-                float fov = cameraComponent->GetFOV();
-                if (ImGui::DragFloat("FOV", &fov, 0.1f, 0.5f, 175.0f))
-                {
-                    cameraComponent->SetFOV(fov);
-                }
-
-                ImGui::End();
-            }
+            ImGui::End();
         }
 
-        if (!LightObject.expired())
+        if (ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
         {
-            auto lightObject = LightObject.lock();
-            auto lightComponentOptional = lightObject->GetFirstComponent<Components::LightComponent>();
+            ImGui::SetWindowPos(ImVec2(extentImGui.x - 350.0f, 0), ImGuiCond_Always);
+            ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
 
-            if (lightComponentOptional.has_value() && ImGui::Begin("Light Properties"))
-            {
-                auto lightComponent = lightComponentOptional.value();
-                glm::vec3 lightPosition = lightObject->GetLocalPosition();
-                if (ImGui::DragFloat3("Position", &lightPosition.x, 0.05f))
-                {
-                    lightObject->SetLocalPosition(lightPosition);
-                }
+            Scene->RenderSelectedProperties();
 
-                glm::vec3 lightEulerRotation = lightObject->GetLocalEulerRotation();
-                if (ImGui::DragFloat3("Euler Rotation", &lightEulerRotation.x, 0.1f))
-                {
-                    lightObject->SetLocalEulerRotation(lightEulerRotation);
-                }
-
-                const char *lightTypes[] = {"None", "Point", "Spot", "Directional"};
-                auto lightType = lightComponent->GetLightType();
-                auto lightTypeInt = static_cast<int>(lightType);
-                if (ImGui::Combo("Light Type", &lightTypeInt, lightTypes, 4))
-                {
-                    lightComponent->SetLightType(static_cast<LightType>(lightTypeInt));
-                }
-
-                glm::vec3 lightColor = lightComponent->GetLightColor();
-                if (ImGui::ColorEdit3("Light Color", &lightColor.x, ImGuiColorEditFlags_Float))
-                {
-                    lightComponent->SetLightColor(lightColor);
-                }
-
-                float strength = lightComponent->GetLightStrength();
-                if (ImGui::DragFloat("Light Strength", &strength, 10.0f, 0.0f, 100000.0f, "%.3f", ImGuiSliderFlags_Logarithmic))
-                {
-                    lightComponent->SetLightStrength(strength);
-                }
-
-                if (lightType == LightType::Spot)
-                {
-                    float innerSpotAngle = lightComponent->GetInnerSpotAngle();
-                    if (ImGui::DragFloat("Inner Spot Angle", &innerSpotAngle, 0.05f, 0.0f, 179.9f))
-                    {
-                        lightComponent->SetInnerSpotAngle(innerSpotAngle);
-                    }
-
-                    float outerSpotAngle = lightComponent->GetOuterSpotAngle();
-                    if (ImGui::DragFloat("Outer Spot Angle", &outerSpotAngle, 0.05f, 0.0f, 179.9f))
-                    {
-                        lightComponent->SetOuterSpotAngle(outerSpotAngle);
-                    }
-                }
-
-                ImGui::End();
-            }
+            ImGui::End();
         }
     }
 

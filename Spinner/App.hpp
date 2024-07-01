@@ -27,8 +27,6 @@ namespace Spinner
         Spinner::ImGuiInstance::Pointer ImGuiInstance;
         Spinner::Lighting::Pointer Lighting;
 
-        Spinner::SceneObject::WeakPointer CameraObject;
-        Spinner::SceneObject::WeakPointer LightObject;
         Spinner::Image::Pointer DepthImage;
 
     public:

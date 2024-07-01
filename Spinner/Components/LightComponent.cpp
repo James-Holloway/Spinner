@@ -1,6 +1,7 @@
 #include "LightComponent.hpp"
 
 #include "../SceneObject.hpp"
+#include <imgui.h>
 
 namespace Spinner
 {
@@ -91,6 +92,47 @@ namespace Spinner
             // TODO Apply shadow matrix
 
             return light;
+        }
+
+        void LightComponent::RenderDebugUI()
+        {
+            BaseRenderDebugUI();
+
+            static const char *lightTypes[] = {"None", "Point", "Spot", "Directional"};
+
+            auto lightType = GetLightType();
+            auto lightTypeInt = static_cast<int>(lightType);
+            if (ImGui::Combo("Light Type", &lightTypeInt, lightTypes, 4))
+            {
+                SetLightType(static_cast<Spinner::LightType>(lightTypeInt));
+            }
+
+            glm::vec3 lightColor = GetLightColor();
+            if (ImGui::ColorEdit3("Light Color", &lightColor.x, ImGuiColorEditFlags_Float))
+            {
+                SetLightColor(lightColor);
+            }
+
+            float strength = GetLightStrength();
+            if (ImGui::DragFloat("Light Strength", &strength, 10.0f, 0.0f, 100000.0f, "%.3f", ImGuiSliderFlags_Logarithmic))
+            {
+                SetLightStrength(strength);
+            }
+
+            if (lightType == LightType::Spot)
+            {
+                float innerSpotAngle = glm::degrees(GetInnerSpotAngle());
+                if (ImGui::DragFloat("Inner Spot Angle", &innerSpotAngle, 0.05f, 0.0f, 179.9f))
+                {
+                    SetInnerSpotAngle(glm::radians(innerSpotAngle));
+                }
+
+                float outerSpotAngle = glm::degrees(GetOuterSpotAngle());
+                if (ImGui::DragFloat("Outer Spot Angle", &outerSpotAngle, 0.05f, 0.0f, 179.9f))
+                {
+                    SetOuterSpotAngle(glm::radians(outerSpotAngle));
+                }
+            }
         }
     } // Components
 } // Spinner

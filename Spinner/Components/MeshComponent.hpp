@@ -57,6 +57,8 @@ namespace Spinner
 
             void UpdateConstantBuffer(const ConstantBufferType &constants);
             ConstantBufferType GetMeshConstants();
+
+            void RenderDebugUI();
         };
 
         template<>
@@ -69,6 +71,12 @@ namespace Spinner
         inline const char *GetComponentName<MeshComponent>()
         {
             return "MeshComponent";
+        }
+
+        template<>
+        inline void RenderDebugUI<MeshComponent>(MeshComponent *component)
+        {
+            component->RenderDebugUI();
         }
     }
 }

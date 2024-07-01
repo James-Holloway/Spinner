@@ -2,6 +2,7 @@
 
 #include "../SceneObject.hpp"
 #include "../Graphics.hpp"
+#include <imgui.h>
 
 namespace Spinner
 {
@@ -94,6 +95,29 @@ namespace Spinner
             }
 
             return ActiveCameraComponent.first.lock()->GetComponentRawPointer<CameraComponent>(ActiveCameraComponent.second);
+        }
+
+        void CameraComponent::RenderDebugUI()
+        {
+            BaseRenderDebugUI();
+            
+            float fov = GetFOV();
+            if (ImGui::DragFloat("FOV", &fov, 0.1f, 0.5f, 175.0f))
+            {
+                SetFOV(fov);
+            }
+
+            float nearZ = GetNearZ();
+            if (ImGui::DragFloat("Near Z", &nearZ, 0.1f, 0.001f, 100.0f, "%.3f"))
+            {
+                SetNearZ(nearZ);
+            }
+
+            float farZ = GetFarZ();
+            if (ImGui::DragFloat("Far Z", &farZ, 0.1f, 0.01f, 10000.0f, "%.2f"))
+            {
+                SetFarZ(farZ);
+            }
         }
     } // Components
 } // Spinner

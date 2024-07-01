@@ -1,6 +1,9 @@
 #include "Component.hpp"
 
 #include "../SceneObject.hpp"
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
+#include "Components.hpp"
 
 namespace Spinner
 {
@@ -47,5 +50,27 @@ namespace Spinner
     void Components::Component::SetComponentName(const std::string &name) noexcept
     {
         Name = name;
+    }
+
+    void Components::Component::BaseRenderDebugUI()
+    {
+        // --- ComponentType ---
+        const char *componentName = GetNameByComponentId(ComponentId);
+        ImGui::SeparatorText(componentName);
+
+        // [x] Active
+        bool active = GetActive();
+        if (ImGui::Checkbox("Active", &active))
+        {
+            SetActive(active);
+        }
+
+        // [Name] Component Name
+        std::string name = GetComponentName();
+        name.reserve(name.size() + 1);
+        if (ImGui::InputText("Component Name", &name, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            SetComponentName(name);
+        }
     }
 }

@@ -43,6 +43,8 @@ namespace Spinner
             void SetIsShadowCaster(bool isShadowCaster);
 
             [[nodiscard]] Spinner::Light GetLight() const;
+
+            void RenderDebugUI();
         };
 
         template<>
@@ -55,6 +57,12 @@ namespace Spinner
         inline const char *GetComponentName<LightComponent>()
         {
             return "LightComponent";
+        }
+
+        template<>
+        inline void RenderDebugUI<LightComponent>(LightComponent *component)
+        {
+            component->RenderDebugUI();
         }
 
     } // Components

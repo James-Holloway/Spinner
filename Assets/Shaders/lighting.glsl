@@ -78,12 +78,6 @@ vec3 CalculateLight(Light light, vec3 worldPos, vec3 V, vec3 N, float metallic, 
         vec3 lightWorldDiff = light.position.xyz - worldPos.xyz;
         float lightDistanceSquared = (lightWorldDiff.x * lightWorldDiff.x) + (lightWorldDiff.y * lightWorldDiff.y) + (lightWorldDiff.z * lightWorldDiff.z);
         attenuation = 1.0f / lightDistanceSquared;
-
-        // Adjust attenuation when spotlight based on the spotlight's cone
-        if (lightType == LightType_Spot)
-        {
-            attenuation *= CalculateSpotCone(light.direction.xyz, L.xyz, light.extraData.x, light.extraData.y);
-        }
     }
     else // Directional lighting
     {
@@ -91,7 +85,15 @@ vec3 CalculateLight(Light light, vec3 worldPos, vec3 V, vec3 N, float metallic, 
     }
 
     vec3 lightColor = vec3(light.red, light.green, light.blue);
-    return BRDF(L, V, N, metallic, roughness, materialColor, lightColor, attenuation);
+    vec3 outColor = BRDF(L, V, N, metallic, roughness, materialColor, lightColor, attenuation);
+
+    // Adjust light color when spotlight based on the spotlight's cone
+    if (lightType == LightType_Spot)
+    {
+        outColor *= CalculateSpotCone(light.direction.xyz, L.xyz, light.extraData.x, light.extraData.y);
+    }
+
+    return outColor;
 }
 
 #ifndef NO_FINAL_LIGHT_CALCULATION// Don't define the light calculation if not wanted

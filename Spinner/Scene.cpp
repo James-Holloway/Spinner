@@ -3,12 +3,12 @@
 #include <map>
 #include <utility>
 #include <iostream>
-#include "tiny_gltf.h"
+#include <tiny_gltf.h>
+#include <imgui.h>
 #include "Utilities.hpp"
 #include "MeshBuilder.hpp"
 #include "MeshData/StaticMeshVertex.hpp"
-#include "Components/CameraComponent.hpp"
-#include "Components/LightComponent.hpp"
+#include "Components/Components.hpp"
 #include "Material.hpp"
 #include "Image.hpp"
 #include "Texture.hpp"
@@ -80,7 +80,10 @@ namespace Spinner
             auto lightComponents = sceneObject->GetComponentRawPointers<Components::LightComponent>();
             for (auto &lightComponent : lightComponents)
             {
-                activeLightComponents.push_back(lightComponent);
+                if (lightComponent->GetActive())
+                {
+                    activeLightComponents.push_back(lightComponent);
+                }
             }
 
             return true;
@@ -772,6 +775,58 @@ namespace Spinner
         }
 
         return GlobalLighting.lock();
+    }
+
+    void Scene::RenderHierarchy()
+    {
+        constexpr static ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.6f);
+
+        auto selectedObject = SelectedInHierarchy.lock();
+        int indexID = 0;
+
+        GetObjectTree()->Traverse([&](const SceneObject::Pointer &object) -> bool
+                {
+                    ImGui::Indent(8);
+                    bool isActive = object->IsActive();
+                    if (!isActive)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                    }
+                    std::string id = object->GetName() + "##" + std::to_string(indexID++);
+                    if (ImGui::RadioButton(id.c_str(), object == selectedObject))
+                    {
+                        if (object != selectedObject)
+                        {
+                            SelectedInHierarchy = object;
+                        }
+                        else
+                        {
+                            SelectedInHierarchy = {}; // deselect if already selected
+                        }
+                    }
+
+                    if (!isActive)
+                    {
+                        ImGui::PopStyleColor();
+                    }
+
+                    return true;
+                },
+                [&](const SceneObject::Pointer &object) -> void
+                {
+                    ImGui::Unindent(8);
+                });
+    }
+
+    void Scene::RenderSelectedProperties()
+    {
+        auto selectedObject = SelectedInHierarchy.lock();
+        if (selectedObject == nullptr)
+        {
+            return;
+        }
+
+        selectedObject->RenderDebugUI();
     }
 
 } // Spinner

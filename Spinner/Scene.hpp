@@ -34,6 +34,9 @@ namespace Spinner
 
         [[nodiscard]] SceneObject::Pointer GetObjectTree();
 
+        void RenderHierarchy();
+        void RenderSelectedProperties();
+
     protected:
         std::string Name;
         SceneObject::Pointer ObjectTree;
@@ -43,6 +46,9 @@ namespace Spinner
 
         bool Active = true;
         bool HasSetObjectTreeScene = false;
+
+        // Debug ImGui
+        SceneObject::WeakPointer SelectedInHierarchy;
 
     protected:
         static std::weak_ptr<Spinner::Lighting> GlobalLighting;

@@ -3,6 +3,8 @@
 #include <utility>
 #include "Shader.hpp"
 #include "Graphics.hpp"
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 namespace Spinner
 {
@@ -153,5 +155,77 @@ namespace Spinner
     void Material::SetDefaultTextureType(uint32_t textureIndex, Material::DefaultTextureType defaultTextureType)
     {
         DefaultTextureTypes.at(textureIndex) = defaultTextureType;
+    }
+
+    void Material::RenderDebugUI()
+    {
+        // --- Material ---
+        ImGui::SeparatorText("Material");
+
+        // [Name] Material Name
+        std::string name = GetName();
+        name.reserve(name.size() + 1);
+        if (ImGui::InputText("Material Name", &name, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            SetName(name);
+        }
+
+        // [R] [G] [B] [A] [col] Base Color
+        glm::vec4 color = GetColor();
+        if (ImGui::ColorEdit4("Base Color", &color.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf))
+        {
+            SetColor(color);
+        }
+
+        // [0.5] Roughness
+        float roughness = GetRoughness();
+        if (ImGui::DragFloat("Roughness", &roughness, 0.01f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp))
+        {
+            SetRoughness(roughness);
+        }
+
+        // [0] Metallic
+        float metallic = GetMetallic();
+        if (ImGui::DragFloat("Metallic", &metallic, 0.01f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp))
+        {
+            SetMetallic(metallic);
+        }
+
+        // [0.0] Emission Strength
+        float emissionStrength = GetEmissionStrength();
+        if (ImGui::DragFloat("Emission Strength", &emissionStrength, 0.01f, 0.0f, 100000.0f, "%.2f"))
+        {
+            SetEmissionStrength(emissionStrength);
+        }
+
+        // List of textures
+        size_t i = 0;
+        for (auto &texture : Textures)
+        {
+            if (texture != nullptr)
+            {
+                ImGui::Text("Texture \"%s\"", texture->GetName().c_str());
+            }
+            else
+            {
+                switch (GetDefaultTextureType(i))
+                {
+
+                    case DefaultTextureType::Black:
+                        ImGui::Text("Default Black Texture");
+                        break;
+                    case DefaultTextureType::White:
+                        ImGui::Text("Default White Texture");
+                        break;
+                    case DefaultTextureType::Transparent:
+                        ImGui::Text("Default Transparent Texture");
+                        break;
+                    case DefaultTextureType::Magenta:
+                        ImGui::Text("Default Magenta Texture");
+                        break;
+                }
+            }
+            i++;
+        }
     }
 } // Spinner

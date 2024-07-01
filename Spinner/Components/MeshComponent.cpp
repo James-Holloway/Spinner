@@ -6,6 +6,7 @@
 #include "../VulkanInstance.hpp"
 #include "../Scene.hpp"
 #include "../Lighting.hpp"
+#include <imgui.h>
 
 namespace Spinner::Components
 {
@@ -127,5 +128,51 @@ namespace Spinner::Components
     void MeshComponent::SetConstantBindingsDirty()
     {
         ConstantBindingsDirty.set();
+    }
+
+    void MeshComponent::RenderDebugUI()
+    {
+        BaseRenderDebugUI();
+
+        if (VertexShaderInstance != nullptr)
+        {
+            ImGui::Text("Vertex Shader Name: %s", VertexShaderInstance->GetShader()->GetShaderName().c_str());
+        }
+        else
+        {
+            ImGui::Text("No Vertex Shader");
+        }
+
+        if (FragmentShaderInstance != nullptr)
+        {
+            ImGui::Text("Fragment Shader Name: %s", FragmentShaderInstance->GetShader()->GetShaderName().c_str());
+        }
+        else
+        {
+            ImGui::Text("No Fragment Shader");
+        }
+
+        if (MeshBuffer != nullptr)
+        {
+            ImGui::Text("Mesh Buffer Index Count: %u", MeshBuffer->IndexCount);
+            ImGui::Text("Mesh Buffer Total Buffer Size: %lu", MeshBuffer->BufferSize);
+        }
+        else
+        {
+            ImGui::Text("No Mesh Buffer");
+        }
+
+        ImGui::Indent(8);
+        if (Material != nullptr)
+        {
+            ImGui::PushID("Material");
+            Material->RenderDebugUI();
+            ImGui::PopID();
+        }
+        else
+        {
+            ImGui::Text("No Material");
+        }
+        ImGui::Unindent(8);
     }
 }

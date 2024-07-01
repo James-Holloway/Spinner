@@ -79,6 +79,7 @@ namespace Spinner
         bool RemoveChild(const Pointer &child);
 
         bool IsActive() const;
+        void SetActive(bool active);
 
         void Traverse(const std::function<bool(const SceneObject::Pointer &)> &traverseFunction, const std::function<void(const SceneObject::Pointer &)> &traverseUpFunction = nullptr, int maxDepth = -1, int currentDepth = 0);
         void TraverseActive(const std::function<bool(const SceneObject::Pointer &)> &traverseFunction, const std::function<void(const SceneObject::Pointer &)> &traverseUpFunction = nullptr, int maxDepth = -1, int currentDepth = 0);
@@ -133,6 +134,11 @@ namespace Spinner
             return ComponentCount(Components::GetComponentId<T>());
         }
 
+        inline size_t TotalComponentCount()
+        {
+            return Components.size();
+        }
+
         template<Components::IsComponent T>
         inline Components::ComponentPtr<T> AddComponent()
         {
@@ -144,7 +150,6 @@ namespace Spinner
             return componentPtr;
         }
 
-        /// Used internally, GetFirstComponent<T> is more recommended
         template<Components::IsComponent T>
         T *GetFirstComponentRawPointer()
         {
@@ -159,7 +164,6 @@ namespace Spinner
             return nullptr;
         }
 
-        /// Used internally
         template<Components::IsComponent T>
         T *GetComponentRawPointer(int64_t componentIndex)
         {
@@ -174,7 +178,6 @@ namespace Spinner
             return nullptr;
         }
 
-        /// Used internally
         template<Components::IsComponent T>
         std::vector<T *> GetComponentRawPointers()
         {
@@ -189,6 +192,19 @@ namespace Spinner
             }
 
             return rawPointers;
+        }
+
+        template<Components::IsComponent T>
+        void GetComponentRawPointers(std::vector<T *> &rawPointers)
+        {
+            Components::ComponentId id = Components::GetComponentId<T>();
+            for (auto &component : Components)
+            {
+                if (component->GetComponentId() == id)
+                {
+                    rawPointers.push_back(reinterpret_cast<T *>(component.get()));
+                }
+            }
         }
 
         template<Components::IsComponent T>
@@ -211,10 +227,63 @@ namespace Spinner
             {
                 if (component->GetComponentId() == id)
                 {
-                    components.push_back({shared_from_this(), component->GetComponentIndex()});
+                    components.emplace_back(shared_from_this(), component->GetComponentIndex());
                 }
             }
 
+            return components;
+        }
+
+        template<Components::IsComponent T>
+        void GetComponents(std::vector<Components::ComponentPtr<T>> &components)
+        {
+            Components::ComponentId id = Components::GetComponentId<T>();
+            for (auto &component : Components)
+            {
+                if (component->GetComponentId() == id)
+                {
+                    components.emplace_back(shared_from_this(), component->GetComponentIndex());
+                }
+            }
+        }
+
+        template<Components::IsComponent T>
+        inline void GetComponentsInChildren(std::vector<Components::ComponentPtr<T>> &components, bool includeInactive = false)
+        {
+            for (auto &child : Children)
+            {
+                if (includeInactive || child->IsActive())
+                {
+                    child->GetComponents(components);
+                }
+            }
+        }
+
+        template<Components::IsComponent T>
+        inline std::vector<Components::ComponentPtr<T>> GetComponentsInChildren(bool includeInactive = false)
+        {
+            std::vector<Components::ComponentPtr<T>> components;
+            GetComponentsInChildren<T>(components, includeInactive);
+            return components;
+        }
+
+        template<Components::IsComponent T>
+        inline void GetComponentRawPointersInChildren(std::vector<T *> &components, bool includeInactive = false)
+        {
+            for (auto &child : Children)
+            {
+                if (includeInactive || child->IsActive())
+                {
+                    child->GetComponentRawPointers<T>(components);
+                }
+            }
+        }
+
+        template<Components::IsComponent T>
+        inline std::vector<Components::ComponentPtr<T>> GetComponentRawPointersInChildren(bool includeInactive = false)
+        {
+            std::vector<T *> components;
+            GetComponentRawPointersInChildren<T>(components, includeInactive);
             return components;
         }
 
@@ -228,6 +297,19 @@ namespace Spinner
                 return component->GetComponentId() == id && component->GetComponentIndex() == componentIndex;
             });
         }
+
+        template<Components::IsComponent T>
+        inline void RemoveComponent(T *componentRawPtr)
+        {
+            Components::ComponentId id = Components::GetComponentId<T>();
+            int64_t componentIndex = componentRawPtr->GetComponentIndex();
+            std::remove_if(Components.begin(), Components.end(), [&id, &componentIndex](const Components::Component::Pointer &component)
+            {
+                return component->GetComponentId() == id && component->GetComponentIndex() == componentIndex;
+            });
+        }
+
+        void RenderDebugUI();
 
     public:
         Callback<const SceneObject::Pointer &, const std::weak_ptr<Scene> &> ParentChanged;

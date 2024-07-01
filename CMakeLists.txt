@@ -89,6 +89,7 @@ add_library(Spinner OBJECT
         Spinner/Components/LightComponent.hpp
         Spinner/Lighting.cpp
         Spinner/Lighting.hpp
+        Spinner/Components/Components.hpp
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 

@@ -50,6 +50,8 @@ namespace Spinner
         [[nodiscard]] DefaultTextureType GetDefaultTextureType(uint32_t textureIndex) const;
         void SetDefaultTextureType(uint32_t textureIndex, DefaultTextureType defaultTextureType);
 
+        void RenderDebugUI();
+
     protected:
         std::string Name;
         glm::vec4 Color{1, 1, 1, 1};

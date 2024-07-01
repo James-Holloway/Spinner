@@ -31,6 +31,8 @@ namespace Spinner
             void SetFarZ(float farZ) noexcept;
             void UpdateSceneConstants(SceneConstants &sceneConstants);
 
+            void RenderDebugUI();
+
         protected:
             static std::pair<std::weak_ptr<Spinner::SceneObject>, int64_t> ActiveCameraComponent;
 
@@ -48,6 +50,12 @@ namespace Spinner
         inline const char *GetComponentName<CameraComponent>()
         {
             return "CameraComponent";
+        }
+
+        template<>
+        inline void RenderDebugUI<CameraComponent>(CameraComponent *component)
+        {
+            component->RenderDebugUI();
         }
 
     } // Components

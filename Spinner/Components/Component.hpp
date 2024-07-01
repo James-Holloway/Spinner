@@ -52,7 +52,9 @@ namespace Spinner
             [[nodiscard]] Components::ComponentId GetComponentId() const noexcept;
             [[nodiscard]] int64_t GetComponentIndex() const noexcept;
             [[nodiscard]] std::string GetComponentName() const noexcept;
-            void SetComponentName(const std::string& name) noexcept;
+            void SetComponentName(const std::string &name) noexcept;
+
+            void BaseRenderDebugUI();
         };
 
         template<typename T>
@@ -68,6 +70,12 @@ namespace Spinner
         inline const char *GetComponentName()
         {
             return "Component";
+        }
+
+        template<IsComponent T>
+        inline void RenderDebugUI(T *component)
+        {
+            component->BaseRenderDebugUI();
         }
     }
 }

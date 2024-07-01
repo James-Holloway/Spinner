@@ -2,6 +2,9 @@
 
 #include <utility>
 #include "Utilities.hpp"
+#include "Components/Components.hpp"
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 namespace Spinner
 {
@@ -88,6 +91,11 @@ namespace Spinner
     bool SceneObject::IsActive() const
     {
         return Active;
+    }
+
+    void SceneObject::SetActive(bool active)
+    {
+        Active = active;
     }
 
     void SceneObject::SetWorldMatrixDirty()
@@ -314,7 +322,7 @@ namespace Spinner
                 return;
         }
 
-        if (currentDepth >= maxDepth)
+        if (currentDepth >= maxDepth && maxDepth > 0)
             return;
 
         for (auto &child : Children)
@@ -407,6 +415,71 @@ namespace Spinner
     SceneObject::Pointer SceneObject::GetChildByIndex(size_t index) const
     {
         return Children.at(index);
+    }
+
+    // NOTE: Add further
+    void SceneObject::RenderDebugUI()
+    {
+        ImGui::SeparatorText("SceneObject");
+
+        bool active = IsActive();
+        if (ImGui::Checkbox("Active", &active))
+        {
+            SetActive(active);
+        }
+
+        std::string name = GetName();
+        name.reserve(name.size() + 1);
+        if (ImGui::InputText("Name", &name))
+        {
+            SetName(name);
+        }
+
+        glm::vec3 localPosition = GetLocalPosition();
+        if (ImGui::DragFloat3("Local Position", &localPosition.x, 0.05f, 0.0f, 0.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+        {
+            SetLocalPosition(localPosition);
+        }
+
+        glm::quat localRotation = GetLocalRotation();
+        if (ImGui::DragFloat4("Local Rotation", &localRotation.x, 0.01f, 0.0f, 0.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+        {
+            SetLocalRotation(localRotation);
+        }
+
+        glm::vec3 localEulerRotation = GetLocalEulerRotation();
+        if (ImGui::DragFloat3("Local Euler Rotation", &localEulerRotation.x, 0.1f, 0.0f, 0.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+        {
+            SetLocalEulerRotation(localEulerRotation);
+        }
+
+        glm::vec3 localScale = GetLocalScale();
+        if (ImGui::DragFloat3("Local Scale", &localScale.x, 0.01f, 0.0f, 0.0f, "%.3f", ImGuiSliderFlags_NoRoundToFormat))
+        {
+            SetLocalScale(localScale);
+        }
+
+        ImGui::Text("Child count: %lu", Children.size());
+
+        ImGui::Indent(8);
+        int componentsRendered = 0;
+
+#define COMPONENT_RENDER_DEBUG_UI(type) \
+        auto components##type = GetComponentRawPointers<Components::type>(); \
+        for (auto &component : components##type) \
+        { \
+            ImGui::PushID(componentsRendered++); \
+            Components::RenderDebugUI(component); \
+            ImGui::PopID(); \
+        }
+
+        COMPONENT_RENDER_DEBUG_UI(MeshComponent);
+        COMPONENT_RENDER_DEBUG_UI(CameraComponent);
+        COMPONENT_RENDER_DEBUG_UI(LightComponent);
+
+#undef COMPONENT_RENDER_DEBUG_UI
+
+        ImGui::Unindent(8);
     }
 
 } // Spinner
