@@ -15,6 +15,32 @@ namespace Spinner
         }
     }
 
+    static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+    {
+        void *userPointer = glfwGetWindowUserPointer(window);
+        if (userPointer != nullptr)
+        {
+            auto input = reinterpret_cast<Window *>(userPointer)->GetInput();
+            if (input != nullptr)
+            {
+                input->SendKeyEvent(key, scancode, action, mods);
+            }
+        }
+    }
+
+    static void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+    {
+        void *userPointer = glfwGetWindowUserPointer(window);
+        if (userPointer != nullptr)
+        {
+            auto input = reinterpret_cast<Window *>(userPointer)->GetInput();
+            if (input != nullptr)
+            {
+                input->SendMouseButtonEvent(button, action, mods);
+            }
+        }
+    }
+
     void Window::Create(int width, int height, const std::string &title)
     {
         if (GLFWWindow != nullptr)
@@ -34,12 +60,18 @@ namespace Spinner
             throw std::runtime_error("Window could not be created");
         }
 
+        Input = std::make_shared<Spinner::Input>();
+
         glfwSetWindowUserPointer(GLFWWindow, this);
         glfwSetFramebufferSizeCallback(GLFWWindow, &FrameBufferResizeCallback);
+        glfwSetKeyCallback(GLFWWindow, &KeyCallback);
+        glfwSetMouseButtonCallback(GLFWWindow, &MouseButtonCallback);
     }
 
     void Window::Destroy()
     {
+        Input.reset();
+
         if (GLFWWindow == nullptr)
         {
             throw std::runtime_error("Cannot destroy window as it has not been created");
@@ -106,6 +138,11 @@ namespace Spinner
     GLFWwindow *Window::GetWindow() const
     {
         return GLFWWindow;
+    }
+
+    Spinner::Input::Pointer Window::GetInput() const
+    {
+        return Input;
     }
 
 

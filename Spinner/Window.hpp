@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vulkan/vulkan.hpp>
+#include "Input.hpp"
 
 struct GLFWwindow;
 
@@ -25,6 +26,7 @@ namespace Spinner
         int Width = 0, Height = 0;
         vk::SurfaceKHR Surface;
         bool FrameBufferNeedsResize = false;
+        Spinner::Input::Pointer Input;
 
     public:
         void Create(int width, int height, const std::string &title);
@@ -38,6 +40,7 @@ namespace Spinner
         static void PollEvents();
         [[nodiscard]] bool DoesFrameBufferNeedsResize() const;
         void SetFrameBufferNeedsResize(bool dirty);
+        [[nodiscard]] Spinner::Input::Pointer GetInput() const;
     };
 
 } // Spinner

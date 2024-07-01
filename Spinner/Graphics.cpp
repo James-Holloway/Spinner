@@ -629,5 +629,14 @@ namespace Spinner
         return FindSupportedFormat({vk::Format::eD24UnormS8Uint, vk::Format::eD16Unorm, vk::Format::eD16UnormS8Uint, vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint}, vk::ImageTiling::eOptimal, vk::FormatFeatureFlagBits::eDepthStencilAttachment);
     }
 
+    Input::Pointer Graphics::GetInput()
+    {
+        if (std::shared_ptr<Window> window = GraphicsInstance->GetMainWindow())
+        {
+            return window->GetInput();
+        }
+        throw std::runtime_error("Graphics' MainWindow was nullptr, cannot get Input");
+    }
+
 
 } // Spinner

@@ -64,8 +64,10 @@ namespace Spinner
         {
             AppInit();
 
+            auto input = Graphics::GetInput();
             while (!MainWindow->ShouldClose())
             {
+                input->ResetFrameKeyState();
                 Window::PollEvents();
 
                 AppUpdate();
@@ -98,7 +100,7 @@ namespace Spinner
 
         MeshData::StaticMeshVertex::CreateShaders();
 
-        auto testObject = Scene::LoadModel("Duck.glb");
+        auto testObject = Scene::LoadModel("sponza lit.glb");
 
         if (!Scene->AddObjectToScene(testObject))
         {
@@ -108,7 +110,7 @@ namespace Spinner
         auto cameraObject = SceneObject::Create("Main Camera");
         auto camera = cameraObject->AddComponent<Components::CameraComponent>();
         camera->SetActiveCamera();
-        cameraObject->SetLocalPosition({0, 0, 5});
+        cameraObject->SetLocalPosition({0, 1, 1.5f});
         cameraObject->SetLocalRotation({1, 0, 0, 0});
         cameraObject->SetLocalEulerRotation({0, 180, 0});
         Scene->AddObjectToScene(cameraObject);
@@ -221,29 +223,39 @@ namespace Spinner
     {
         ImGuiInstance::StartFrame();
 
+
         Scene->Update(Graphics->CurrentFrame);
 
         auto extentUint = Graphics::GetSwapchainExtent();
         auto extentImGui = ImVec2(static_cast<float>(extentUint.width), static_cast<float>(extentUint.height));
 
-        if (ImGui::Begin("Hierarchy", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+        if (ViewDebugUI)
         {
-            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-            ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
+            if (ImGui::Begin("Hierarchy", &ViewDebugUI, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+            {
+                ImGui::SetWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+                ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
 
-            Scene->RenderHierarchy();
+                Scene->RenderHierarchy();
 
-            ImGui::End();
+                ImGui::End();
+            }
+
+            if (ImGui::Begin("Properties", &ViewDebugUI, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+            {
+                ImGui::SetWindowPos(ImVec2(extentImGui.x - 350.0f, 0), ImGuiCond_Always);
+                ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
+
+                Scene->RenderSelectedProperties();
+
+                ImGui::End();
+            }
         }
 
-        if (ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+        auto input = Graphics::GetInput();
+        if (input->GetKeyPressed(Key::F3))
         {
-            ImGui::SetWindowPos(ImVec2(extentImGui.x - 350.0f, 0), ImGuiCond_Always);
-            ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
-
-            Scene->RenderSelectedProperties();
-
-            ImGui::End();
+            ViewDebugUI = !ViewDebugUI;
         }
     }
 

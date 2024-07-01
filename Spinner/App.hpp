@@ -28,6 +28,7 @@ namespace Spinner
         Spinner::Lighting::Pointer Lighting;
 
         Spinner::Image::Pointer DepthImage;
+        bool ViewDebugUI = true;
 
     public:
         void Run();
