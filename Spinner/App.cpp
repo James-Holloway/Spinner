@@ -115,11 +115,11 @@ namespace Spinner
         cameraObject->SetLocalEulerRotation({0, 180, 0});
         Scene->AddObjectToScene(cameraObject);
 
-        auto lightObject = SceneObject::Create("Point light");
-        auto light = lightObject->AddComponent<Components::LightComponent>();
-        light->SetLightType(LightType::Point);
-        lightObject->SetLocalPosition({0, 5, 0});
-        Scene->AddObjectToScene(lightObject);
+        // auto lightObject = SceneObject::Create("Point light");
+        // auto light = lightObject->AddComponent<Components::LightComponent>();
+        // light->SetLightType(LightType::Point);
+        // lightObject->SetLocalPosition({0, 5, 0});
+        // Scene->AddObjectToScene(lightObject);
     }
 
     void App::AppCleanup()

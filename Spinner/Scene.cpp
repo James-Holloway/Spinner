@@ -146,6 +146,7 @@ namespace Spinner
     {
         std::vector<Spinner::Material::Pointer> Materials;
         std::string Warnings;
+        size_t NodeIndex = 0;
     };
 
     static bool DoesMeshHaveAttribute(const tinygltf::Mesh &mesh, const std::string &attribute)
@@ -358,11 +359,15 @@ namespace Spinner
         return CreateStaticMeshBuffersFromMesh(model, mesh);
     }
 
-    static SceneObject::Pointer CreateSceneObjectFromMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, std::string nodeName, const SceneInformation &sceneInfo)
+    static SceneObject::Pointer CreateSceneObjectFromMesh(const tinygltf::Model &model, const tinygltf::Mesh &mesh, std::string nodeName, SceneInformation &sceneInfo)
     {
         if (nodeName.empty())
         {
             nodeName = mesh.name;
+        }
+        if (nodeName.empty())
+        {
+            nodeName = std::string("Mesh ") + std::to_string(sceneInfo.NodeIndex++);
         }
 
         auto sceneObject = std::make_shared<SceneObject>(nodeName);
@@ -392,6 +397,71 @@ namespace Spinner
         return std::make_shared<SceneObject>(nodeName);
     }
 
+    static SceneObject::Pointer CreateSceneObjectFromLight(const tinygltf::Model &model, const tinygltf::Light &light, std::string nodeName, SceneInformation &sceneInfo)
+    {
+        if (nodeName.empty())
+        {
+            nodeName = light.name;
+        }
+        if (nodeName.empty())
+        {
+            nodeName = std::string("Light ") + std::to_string(sceneInfo.NodeIndex++);
+        }
+
+        auto sceneObject = std::make_shared<SceneObject>(nodeName);
+        auto lightComponent = sceneObject->AddComponent<Components::LightComponent>();
+
+
+        // https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_lights_punctual/README.md
+        if (!light.type.empty())
+        {
+            if (light.type == "point")
+            {
+                lightComponent->SetLightType(LightType::Point);
+            }
+            else if (light.type == "spot")
+            {
+                lightComponent->SetLightType(LightType::Spot);
+            }
+            else if (light.type == "directional")
+            {
+                lightComponent->SetLightType(LightType::Directional);
+            }
+            else
+            {
+                lightComponent->SetLightType(LightType::None);
+            }
+        }
+
+        if (light.color.size() >= 3)
+        {
+            lightComponent->SetLightColor(glm::vec3(glm::make_vec3(light.color.data())));
+        }
+        else
+        {
+            lightComponent->SetLightColor(glm::vec3(1.0f, 1.0f, 1.0f));
+        }
+
+        auto intensity = static_cast<float>(light.intensity);
+        // Do some dirty conversions from the candela/lux units into Blender's intensity units (1.0)
+        if (lightComponent->GetLightType() == LightType::Directional)
+        {
+            intensity /= 683.0f;
+        }
+        else
+        {
+            intensity /= 54.3514f * 1000.0f; // also convert Blender's 1000 intensity down to 1 intensity
+        }
+        lightComponent->SetLightStrength(intensity);
+
+        // Ignore range
+
+        lightComponent->SetInnerSpotAngle(static_cast<float>(light.spot.innerConeAngle)); // radians, which we like
+        lightComponent->SetOuterSpotAngle(static_cast<float>(light.spot.outerConeAngle)); // radians, which we like
+
+        return sceneObject;
+    }
+
     // Recursively calls itself with its children's IDs
     static SceneObject::Pointer CreateSceneObjectFromNode(const tinygltf::Model &model, const int nodeId, SceneInformation &sceneInfo)
     {
@@ -407,9 +477,15 @@ namespace Spinner
                 auto &mesh = model.meshes.at(node.mesh);
                 sceneObject = CreateSceneObjectFromMesh(model, mesh, node.name, sceneInfo);
             }
+            else if (node.light >= 0)
+            {
+                auto &light = model.lights.at(node.light);
+                sceneObject = CreateSceneObjectFromLight(model, light, node.name, sceneInfo);
+            }
             else
             {
-                sceneObject = CreateEmptySceneObject(node.name);
+                std::string nodeName = node.name.empty() ? (std::string("Node ") + std::to_string(sceneInfo.NodeIndex++)) : node.name;
+                sceneObject = CreateEmptySceneObject(nodeName);
             }
 
             // Don't try child nodes if this node failed
