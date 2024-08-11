@@ -3,6 +3,7 @@
 
 #include "Component.hpp"
 #include "../Constants.hpp"
+#include "../RenderTarget.hpp"
 
 namespace Spinner
 {
@@ -10,6 +11,7 @@ namespace Spinner
 
     namespace Components
     {
+        // Requires a valid RenderTexture to render to
         class CameraComponent : public Component
         {
         public:
@@ -20,9 +22,9 @@ namespace Spinner
             float NearZ = 0.1f;
             float FarZ = 500.0f;
 
+            Spinner::RenderTarget::Pointer RenderTarget;
+
         public:
-            bool IsActiveCamera();
-            void SetActiveCamera();
             [[nodiscard]] float GetFOV() const noexcept;
             [[nodiscard]] float GetNearZ() const noexcept;
             [[nodiscard]] float GetFarZ() const noexcept;
@@ -31,13 +33,13 @@ namespace Spinner
             void SetFarZ(float farZ) noexcept;
             void UpdateSceneConstants(SceneConstants &sceneConstants);
 
+            void CreateRenderTarget(vk::Extent2D extent, bool createColor = true, bool createDepth = true, vk::Format format = RenderTarget::DefaultColorFormat);
+            // Disables rendering
+            void ClearRenderTexture();
+            [[nodiscard]] Spinner::RenderTarget::Pointer GetRenderTarget() const;
+            void SetRenderTarget(Spinner::RenderTarget::Pointer renderTarget);
+
             void RenderDebugUI();
-
-        protected:
-            static std::pair<std::weak_ptr<Spinner::SceneObject>, int64_t> ActiveCameraComponent;
-
-        public:
-            static CameraComponent *GetActiveCameraRawPointer();
         };
 
         template<>

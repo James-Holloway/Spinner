@@ -93,6 +93,37 @@ namespace Spinner
         VkCommandBuffer.copyBufferToImage(srcBuffer, dstImage, dstImageLayout, regionCount, regions);
     }
 
+    void CommandBuffer::BeginRendering(vk::ImageView colorAttachment, vk::ImageView depthAttachment, vk::Rect2D renderArea, vk::ClearColorValue colorClearValue, vk::ClearDepthStencilValue depthClearValue, vk::AttachmentLoadOp colorLoadOp, vk::AttachmentStoreOp colorStoreOp, vk::AttachmentLoadOp depthLoadOp, vk::AttachmentStoreOp depthStoreOp, float minDepth, float maxDepth)
+    {
+        vk::RenderingAttachmentInfo colorAttachmentInfo;
+        colorAttachmentInfo.imageView = colorAttachment;
+        colorAttachmentInfo.imageLayout = vk::ImageLayout::eAttachmentOptimal;
+        colorAttachmentInfo.loadOp = depthLoadOp;
+        colorAttachmentInfo.storeOp = depthStoreOp;
+        colorAttachmentInfo.clearValue = colorClearValue;
+
+        vk::RenderingAttachmentInfo depthAttachmentInfo;
+        depthAttachmentInfo.imageView = depthAttachment;
+        depthAttachmentInfo.imageLayout = vk::ImageLayout::eAttachmentOptimal;
+        depthAttachmentInfo.loadOp = depthLoadOp;
+        depthAttachmentInfo.storeOp = depthStoreOp;
+        depthAttachmentInfo.clearValue.depthStencil = depthClearValue;
+
+        vk::RenderingInfo renderingInfo;
+        renderingInfo.renderArea = renderArea;
+        renderingInfo.layerCount = 1;
+        if (colorAttachment != nullptr)
+        {
+            renderingInfo.setColorAttachments(colorAttachmentInfo);
+        }
+        if (depthAttachment != nullptr)
+        {
+            renderingInfo.setPDepthAttachment(&depthAttachmentInfo);
+        }
+
+        BeginRendering(renderingInfo, renderArea.extent, minDepth, maxDepth);
+    }
+
     void CommandBuffer::BeginRendering(const vk::RenderingInfo &renderingInfo, vk::Extent2D extent, float minDepth, float maxDepth)
     {
         // https://registry.khronos.org/vulkan/specs/1.3-extensions/html/vkspec.html#shaders-objects-state
@@ -146,7 +177,7 @@ namespace Spinner
 
     void CommandBuffer::BindShaderInstance(const ShaderInstance::Pointer &shaderInstance)
     {
-        BindShader(shaderInstance->Shader);
+        // BindShader(shaderInstance->Shader);
         BindShaderInstanceDescriptors(shaderInstance, vk::PipelineBindPoint::eGraphics);
     }
 
@@ -340,6 +371,5 @@ namespace Spinner
         TransitionImageLayout(image->GetImage(), oldLayout, newLayout, aspectFlags, srcStage, dstStage, subresourceRange);
         image->CurrentImageLayout = newLayout;
     }
-
 
 } // Spinner

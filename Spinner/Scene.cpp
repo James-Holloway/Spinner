@@ -20,8 +20,6 @@ namespace Spinner
     Scene::Scene(std::string name) : Name(std::move(name))
     {
         ObjectTree = std::make_shared<Spinner::SceneObject>("Scene root", true);
-        SceneBuffer = Buffer::CreateBuffer(sizeof(SceneConstants), vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst, vma::MemoryUsage::eCpuToGpu, 0, true);
-
         Lighting = GetGlobalLighting();
     }
 
@@ -38,101 +36,6 @@ namespace Spinner
 
         parent->AddChild(object);
         return true;
-    }
-
-    void Scene::Update(uint32_t currentFrame)
-    {
-        auto sceneConstants = GetSceneConstants();
-        // Update scene camera
-        auto activeCameraComponent = Components::CameraComponent::GetActiveCameraRawPointer();
-        if (activeCameraComponent == nullptr)
-        {
-            return;
-        }
-        activeCameraComponent->UpdateSceneConstants(sceneConstants);
-
-        // TODO shader time + delta time
-
-        // Update scene constants
-        UpdateSceneConstants(sceneConstants);
-
-        glm::vec3 viewerPosition = sceneConstants.CameraPosition;
-
-        std::vector<Components::LightComponent *> activeLightComponents;
-
-        // Update mesh constants
-        auto sharedThis = shared_from_this();
-        ObjectTree->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
-        {
-            auto meshComponents = sceneObject->GetComponentRawPointers<Components::MeshComponent>();
-            for (auto &meshComponent : meshComponents)
-            {
-                // Update constant buffer with position
-                auto meshConstants = meshComponent->GetMeshConstants();
-                meshConstants.Model = sceneObject->GetWorldMatrix();
-                meshComponent->UpdateConstantBuffer(meshConstants);
-
-                // Potentially update descriptor sets
-                meshComponent->Update(sharedThis, currentFrame);
-            }
-
-            // Get active light components
-            auto lightComponents = sceneObject->GetComponentRawPointers<Components::LightComponent>();
-            for (auto &lightComponent : lightComponents)
-            {
-                if (lightComponent->GetActive())
-                {
-                    activeLightComponents.push_back(lightComponent);
-                }
-            }
-
-            return true;
-        });
-
-        Lighting->UpdateLights(viewerPosition, activeLightComponents);
-    }
-
-    void Scene::Draw(uint32_t currentFrame, CommandBuffer::Pointer &commandBuffer)
-    {
-        // Only draw when active
-        if (!IsActive())
-            return;
-
-        // Don't draw if no active camera
-        auto activeCameraComponent = Components::CameraComponent::GetActiveCameraRawPointer();
-        if (activeCameraComponent == nullptr)
-        {
-            return;
-        }
-
-        // TODO transparent pass
-        std::map<std::string, std::vector<Components::MeshComponent *>> toDrawOpaque;
-        ObjectTree->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
-        {
-            auto meshComponents = sceneObject->GetComponentRawPointers<Components::MeshComponent>();
-            for (auto &meshComponent : meshComponents)
-            {
-                auto shaderName = meshComponent->GetFragmentShaderInstance()->GetShader()->GetShaderName();
-                toDrawOpaque[shaderName].push_back(meshComponent);
-            }
-
-            return true;
-        });
-
-        // Opaque pass
-        Shader::Pointer prevFragShader = nullptr;
-        for (auto &shaderComponentPair : toDrawOpaque)
-        {
-            if (shaderComponentPair.second.empty())
-                continue;
-
-            for (auto &meshComponent : shaderComponentPair.second)
-            {
-                meshComponent->Draw(commandBuffer);
-            }
-        }
-
-        // TODO transparent pass
     }
 
     struct MeshInformation
@@ -804,22 +707,6 @@ namespace Spinner
     void Scene::SetActive(bool active)
     {
         Active = active;
-    }
-
-    Buffer::Pointer Scene::GetSceneBuffer()
-    {
-        return SceneBuffer;
-    }
-
-    SceneConstants Scene::GetSceneConstants() const noexcept
-    {
-        return LocalSceneBuffer;
-    }
-
-    void Scene::UpdateSceneConstants(const SceneConstants &sceneConstants) noexcept
-    {
-        LocalSceneBuffer = sceneConstants;
-        SceneBuffer->Write<SceneConstants>(LocalSceneBuffer);
     }
 
     std::shared_ptr<Spinner::Lighting> Scene::GetLighting() const noexcept

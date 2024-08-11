@@ -1,6 +1,7 @@
 #include "StaticMeshVertex.hpp"
 
 #include "../Lighting.hpp"
+#include "../SceneDescriptors.hpp"
 
 namespace Spinner::MeshData
 {
@@ -33,8 +34,7 @@ namespace Spinner::MeshData
     {
         return std::vector<vk::DescriptorSetLayoutBinding>{
                 vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
-                vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
-                vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
+                vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
         };
     }
 
@@ -43,8 +43,8 @@ namespace Spinner::MeshData
         // Descriptor Pool
         DescriptorPool = DescriptorPool::CreateDefault();
 
-        // Descriptor Set Layout and push constants
-        auto descriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(GetDescriptorSetLayoutBindings(), {});
+        // Mesh + Scene Descriptor Set Layout and push constants
+        auto meshDescriptorSet = DescriptorSetLayout::CreateDescriptorSetLayout(GetDescriptorSetLayoutBindings(), {}, {});
 
         // Lighting
         auto lightingDescriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(Lighting::GetDescriptorSetLayoutBindings(), {}, Lighting::GetDescriptorBindingFlags());
@@ -54,14 +54,14 @@ namespace Spinner::MeshData
         vertexShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eVertex;
         vertexShaderCreateInfo.ShaderName = "staticmesh";
         vertexShaderCreateInfo.NextStage = vk::ShaderStageFlagBits::eFragment;
-        vertexShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        vertexShaderCreateInfo.DescriptorSetLayouts = {meshDescriptorSet};
         vertexShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
 
         ShaderCreateInfo fragmentShaderCreateInfo;
         fragmentShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eFragment;
         fragmentShaderCreateInfo.ShaderName = "staticmesh";
         fragmentShaderCreateInfo.NextStage = {};
-        fragmentShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        fragmentShaderCreateInfo.DescriptorSetLayouts = {meshDescriptorSet};
         fragmentShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
 
         auto shaders = Shader::CreateLinkedShaders({vertexShaderCreateInfo, fragmentShaderCreateInfo});

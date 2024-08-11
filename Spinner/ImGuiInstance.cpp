@@ -58,9 +58,32 @@ namespace Spinner
         ImGui::NewFrame();
     }
 
-    void ImGuiInstance::EndFrame(vk::CommandBuffer commandBuffer)
+    void ImGuiInstance::EndFrame(const CommandBuffer::Pointer &commandBuffer, const vk::ImageView &swapchainImageView)
     {
         ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+        vk::ClearValue colorClearValue;
+        colorClearValue.color = {0.0f, 0.0f, 0.0f, 1.0f}; // Black
+
+        vk::RenderingAttachmentInfo colorAttachmentInfo;
+        colorAttachmentInfo.imageView = swapchainImageView;
+        colorAttachmentInfo.imageLayout = vk::ImageLayout::eAttachmentOptimal;
+        colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+        colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+        colorAttachmentInfo.clearValue = colorClearValue;
+
+        vk::Rect2D renderArea({0, 0}, Graphics::GetSwapchainExtent());
+
+        vk::RenderingInfo renderingInfo;
+        renderingInfo.renderArea = renderArea;
+        renderingInfo.layerCount = 1;
+        renderingInfo.setColorAttachments(colorAttachmentInfo);
+
+        renderingInfo.pDepthAttachment = nullptr;
+        commandBuffer->BeginRendering(renderingInfo, Graphics::GetSwapchainExtent());
+
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer->VkCommandBuffer);
+
+        commandBuffer->EndRendering();
     }
 } // Spinner

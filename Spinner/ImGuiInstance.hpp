@@ -20,7 +20,7 @@ namespace Spinner
         ~ImGuiInstance() override;
 
         static void StartFrame();
-        static void EndFrame(vk::CommandBuffer commandBuffer);
+        static void EndFrame(const Spinner::CommandBuffer::Pointer &commandBuffer, const vk::ImageView &swapchainImageView);
 
     protected:
         Spinner::DescriptorPool::Pointer DescriptorPool;

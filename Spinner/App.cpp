@@ -2,9 +2,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "MeshData/StaticMeshVertex.hpp"
-#include "Components/MeshComponent.hpp"
-#include "Components/CameraComponent.hpp"
-#include "Components/LightComponent.hpp"
+#include "Components/Components.hpp"
+#include "SceneDescriptors.hpp"
 
 namespace Spinner
 {
@@ -108,8 +107,8 @@ namespace Spinner
         }
 
         auto cameraObject = SceneObject::Create("Main Camera");
-        auto camera = cameraObject->AddComponent<Components::CameraComponent>();
-        camera->SetActiveCamera();
+        MainCamera = cameraObject->AddComponent<Components::CameraComponent>();
+        MainCamera->CreateRenderTarget({512, 512}, true, true);
         cameraObject->SetLocalPosition({0, 1, 1.5f});
         cameraObject->SetLocalRotation({1, 0, 0, 0});
         cameraObject->SetLocalEulerRotation({0, 180, 0});
@@ -120,6 +119,8 @@ namespace Spinner
         // light->SetLightType(LightType::Point);
         // lightObject->SetLocalPosition({0, 5, 0});
         // Scene->AddObjectToScene(lightObject);
+
+        MainDrawManager = DrawManager::Create();
     }
 
     void App::AppCleanup()
@@ -158,62 +159,18 @@ namespace Spinner
         // Track depth image
         commandBuffer->TrackObject(DepthImage);
 
-        vk::ClearValue colorClearValue;
-        colorClearValue.color = {0.4f, 0.58f, 0.93f, 1.0f}; // Cornflower Blue
-
+        // Main rendering
         {
-            vk::RenderingAttachmentInfo colorAttachmentInfo;
-            colorAttachmentInfo.imageView = swapchainImageView;
-            colorAttachmentInfo.imageLayout = vk::ImageLayout::eAttachmentOptimal;
-            colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-            colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-            colorAttachmentInfo.clearValue = colorClearValue;
+            // vk::ClearColorValue colorClearValue = {0.4f, 0.58f, 0.93f, 1.0f}; // Cornflower Blue
+            // commandBuffer->BeginRendering(swapchainImageView, depthImageView, {{0, 0}, Graphics::GetSwapchainExtent()}, colorClearValue);
 
-            vk::RenderingAttachmentInfo depthAttachmentInfo;
-            depthAttachmentInfo.imageView = depthImageView;
-            depthAttachmentInfo.imageLayout = vk::ImageLayout::eAttachmentOptimal;
-            depthAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-            depthAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-            depthAttachmentInfo.clearValue.depthStencil = vk::ClearDepthStencilValue{1.0f, 0u}; // Depth clear value
+            MainDrawManager->Draw(commandBuffer);
 
-            vk::Rect2D renderArea({0, 0}, Graphics::GetSwapchainExtent());
-
-            vk::RenderingInfo renderingInfo;
-            renderingInfo.renderArea = renderArea;
-            renderingInfo.layerCount = 1;
-            renderingInfo.setColorAttachments(colorAttachmentInfo);
-            renderingInfo.pDepthAttachment = &depthAttachmentInfo;
-
-            commandBuffer->BeginRendering(renderingInfo, Graphics::GetSwapchainExtent());
-
-            Scene->Draw(currentFrame, commandBuffer);
-
-            commandBuffer->EndRendering();
+            // commandBuffer->EndRendering();
         }
 
         // ImGui
-        {
-            vk::RenderingAttachmentInfo colorAttachmentInfo;
-            colorAttachmentInfo.imageView = swapchainImageView;
-            colorAttachmentInfo.imageLayout = vk::ImageLayout::eAttachmentOptimal;
-            colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-            colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-            colorAttachmentInfo.clearValue = colorClearValue;
-
-            vk::Rect2D renderArea({0, 0}, Graphics::GetSwapchainExtent());
-
-            vk::RenderingInfo renderingInfo;
-            renderingInfo.renderArea = renderArea;
-            renderingInfo.layerCount = 1;
-            renderingInfo.setColorAttachments(colorAttachmentInfo);
-
-            renderingInfo.pDepthAttachment = nullptr;
-            commandBuffer->BeginRendering(renderingInfo, Graphics::GetSwapchainExtent());
-
-            ImGuiInstance::EndFrame(commandBuffer->VkCommandBuffer);
-
-            commandBuffer->EndRendering();
-        }
+        ImGuiInstance::EndFrame(commandBuffer, swapchainImageView);
 
         // Transition color image for presentation
         commandBuffer->InsertImageMemoryBarrier(swapchainImage, vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe, vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1));
@@ -223,8 +180,7 @@ namespace Spinner
     {
         ImGuiInstance::StartFrame();
 
-
-        Scene->Update(Graphics->CurrentFrame);
+        MainDrawManager->ResetAndUpdate(MainCamera.GetRaw(), Scene);
 
         auto extentUint = Graphics::GetSwapchainExtent();
         auto extentImGui = ImVec2(static_cast<float>(extentUint.width), static_cast<float>(extentUint.height));
@@ -263,7 +219,7 @@ namespace Spinner
     {
         DepthImage.reset();
 
-        DepthImage = Image::CreateImage(Graphics::GetSwapchainExtent(), Graphics->FindDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
+        DepthImage = Image::CreateImage(Graphics::GetSwapchainExtent(), Graphics::FindDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
         DepthImage->CreateMainImageView(vk::ImageAspectFlagBits::eDepth);
     }
 } // Spinner

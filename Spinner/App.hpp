@@ -10,6 +10,8 @@
 #include "Image.hpp"
 #include "VulkanUtilities.hpp"
 #include "Lighting.hpp"
+#include "DrawManager.hpp"
+#include "Components/Components.hpp"
 
 namespace Spinner
 
@@ -26,6 +28,9 @@ namespace Spinner
         Spinner::Scene::Pointer Scene;
         Spinner::ImGuiInstance::Pointer ImGuiInstance;
         Spinner::Lighting::Pointer Lighting;
+        Spinner::Components::ComponentPtr<Spinner::Components::CameraComponent> MainCamera;
+
+        Spinner::DrawManager::Pointer MainDrawManager;
 
         Spinner::Image::Pointer DepthImage;
         bool ViewDebugUI = true;

@@ -11,11 +11,11 @@
 #include "Swapchain.hpp"
 #include "Callback.hpp"
 #include "Object.hpp"
+#include "Constants.hpp"
 #include "CommandBuffer.hpp"
 
 namespace Spinner
 {
-
     class Graphics : public Object
     {
         friend class App;
@@ -74,8 +74,8 @@ namespace Spinner
         [[nodiscard]] uint32_t GetGraphicsQueueFamily() const;
         Spinner::Swapchain *GetSwapchainRawPointer();
         static uint32_t GetCurrentFrame();
-        vk::Format FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
-        vk::Format FindDepthFormat(bool highQuality = false);
+        static vk::Format FindSupportedFormat(const std::vector<vk::Format> &candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+        static vk::Format FindDepthFormat(bool highQuality = false);
 
         vk::SurfaceKHR GetMainSurface();
         [[nodiscard]] static const vk::PhysicalDevice &GetPhysicalDevice();
@@ -88,6 +88,9 @@ namespace Spinner
         static void EndSingleTimeCommands(const CommandBuffer::Pointer &commandBuffer);
         [[nodiscard]] static uint32_t GetGraphicsQueueFamilyIndex();
         [[nodiscard]] static Input::Pointer GetInput();
+
+        [[nodiscard]] static CallbackIdType RegisterResizedCallback(Callback<int, int>::FunctionType callback, const CallbackOwnerToken::WeakPointer &ownerToken);
+        static void UnregisterResizedCallback(CallbackIdType callbackId);
     };
 
 } // Spinner

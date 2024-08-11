@@ -1,6 +1,7 @@
 #include "Graphics.hpp"
 #include <map>
 #include <set>
+#include <utility>
 #include <GLFW/glfw3.h>
 
 namespace Spinner
@@ -605,7 +606,7 @@ namespace Spinner
     {
         for (vk::Format format : candidates)
         {
-            vk::FormatProperties props = PhysicalDevice.getFormatProperties(format);
+            vk::FormatProperties props = GetPhysicalDevice().getFormatProperties(format);
 
             if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
             {
@@ -638,5 +639,14 @@ namespace Spinner
         throw std::runtime_error("Graphics' MainWindow was nullptr, cannot get Input");
     }
 
+    CallbackIdType Graphics::RegisterResizedCallback(Callback<int, int>::FunctionType callback, const CallbackOwnerToken::WeakPointer &ownerToken)
+    {
+        return GraphicsInstance->ResizedCallback.Register(std::move(callback), ownerToken);
+    }
+
+    void Graphics::UnregisterResizedCallback(CallbackIdType callbackId)
+    {
+        GraphicsInstance->ResizedCallback.Unregister(callbackId);
+    }
 
 } // Spinner

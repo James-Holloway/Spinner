@@ -4,33 +4,15 @@
 #include "../Graphics.hpp"
 #include <imgui.h>
 
+#include <utility>
+
 namespace Spinner
 {
     namespace Components
     {
-        std::pair<std::weak_ptr<Spinner::SceneObject>, int64_t> CameraComponent::ActiveCameraComponent;
-
         CameraComponent::CameraComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex) : Component(sceneObject, Components::GetComponentId<CameraComponent>(), componentIndex)
         {
 
-        }
-
-        bool CameraComponent::IsActiveCamera()
-        {
-            if (ActiveCameraComponent.first.expired())
-            {
-                return false;
-            }
-
-            auto activeCameraSceneObject = ActiveCameraComponent.first.lock();
-            auto activeCameraComponentIndex = ActiveCameraComponent.second;
-
-            return activeCameraSceneObject == SceneObject.lock() && ComponentIndex == activeCameraComponentIndex;
-        }
-
-        void CameraComponent::SetActiveCamera()
-        {
-            ActiveCameraComponent = {SceneObject, ComponentIndex};
         }
 
         float CameraComponent::GetFOV() const noexcept
@@ -87,20 +69,10 @@ namespace Spinner
             sceneConstants.ViewProjection = sceneConstants.Projection * view;
         }
 
-        CameraComponent *CameraComponent::GetActiveCameraRawPointer()
-        {
-            if (ActiveCameraComponent.first.expired())
-            {
-                return nullptr;
-            }
-
-            return ActiveCameraComponent.first.lock()->GetComponentRawPointer<CameraComponent>(ActiveCameraComponent.second);
-        }
-
         void CameraComponent::RenderDebugUI()
         {
             BaseRenderDebugUI();
-            
+
             float fov = GetFOV();
             if (ImGui::DragFloat("FOV", &fov, 0.1f, 0.5f, 175.0f))
             {
@@ -118,6 +90,26 @@ namespace Spinner
             {
                 SetFarZ(farZ);
             }
+        }
+
+        void CameraComponent::CreateRenderTarget(vk::Extent2D extent, bool createColor, bool createDepth, vk::Format format)
+        {
+            RenderTarget = RenderTarget::CreateRenderTarget(extent, createColor, createDepth, format);
+        }
+
+        void CameraComponent::ClearRenderTexture()
+        {
+            RenderTarget.reset();
+        }
+
+        Spinner::RenderTarget::Pointer CameraComponent::GetRenderTarget() const
+        {
+            return RenderTarget;
+        }
+
+        void CameraComponent::SetRenderTarget(Spinner::RenderTarget::Pointer renderTarget)
+        {
+            RenderTarget = std::move(renderTarget);
         }
     } // Components
 } // Spinner
