@@ -10,7 +10,7 @@ namespace Spinner
     {
         // Descriptor pool
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+        descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
         descriptorPoolCreateInfo.setMaxSets(MaxSets);
         descriptorPoolCreateInfo.setPoolSizes(Sizes);
         VkDescriptorPool = Graphics::GetDevice().createDescriptorPool(descriptorPoolCreateInfo);
@@ -62,8 +62,8 @@ namespace Spinner
         return Graphics::GetDevice().allocateDescriptorSets(allocateInfo);
     }
 
-    void DescriptorPool::ResetPool() const
+    void DescriptorPool::FreeDescriptorSets(const vk::ArrayProxy<vk::DescriptorSet> &sets) const
     {
-        Graphics::GetDevice().resetDescriptorPool(VkDescriptorPool);
+        Graphics::GetDevice().freeDescriptorSets(VkDescriptorPool, sets);
     }
 } // Spinner

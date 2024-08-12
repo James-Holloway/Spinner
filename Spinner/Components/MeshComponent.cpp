@@ -90,7 +90,7 @@ namespace Spinner::Components
         return LocalConstantBuffer;
     }
 
-    void MeshComponent::Update(const std::shared_ptr<Lighting> &lighting, uint32_t currentFrame)
+    void MeshComponent::Update(const std::shared_ptr<Scene> &scene, uint32_t currentFrame)
     {
         if (Material != nullptr)
         {
@@ -104,19 +104,22 @@ namespace Spinner::Components
         }
 
         // Update lighting (lights + shadows), if applicable
+        auto lighting = scene->GetLighting();
         auto lightingSetIndex = FragmentShaderInstance->GetShader()->GetLightingDescriptorSetIndex();
         if (lighting != nullptr && lightingSetIndex != Shader::InvalidBindingIndex)
         {
             // Do only shadows if constant bindings aren't marked dirty
-            bool onlyShadows = !ConstantBindingsDirty[currentFrame];
-            lighting->UpdateDescriptors(FragmentShaderInstance->GetDescriptorSet(currentFrame, lightingSetIndex), onlyShadows);
+            lighting->UpdateDescriptors(FragmentShaderInstance->GetDescriptorSet(currentFrame, lightingSetIndex), !ConstantBindingsDirty[currentFrame]);
         }
 
         // Used for updating each frame
         if (ConstantBindingsDirty[currentFrame])
         {
-            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, ConstantBuffer);
-            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, ConstantBuffer);
+            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
+            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
+
+            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
+            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
 
             ConstantBindingsDirty[currentFrame] = false;
         }
@@ -171,30 +174,5 @@ namespace Spinner::Components
             ImGui::Text("No Material");
         }
         ImGui::Unindent(8);
-    }
-
-    Spinner::Shader::Pointer MeshComponent::GetVertexShader()
-    {
-        if (VertexShaderInstance == nullptr)
-        {
-            return nullptr;
-        }
-        return VertexShaderInstance->GetShader();
-    }
-
-    Spinner::Shader::Pointer MeshComponent::GetFragmentShader()
-    {
-        if (FragmentShaderInstance == nullptr)
-        {
-            return nullptr;
-        }
-        return FragmentShaderInstance->GetShader();
-    }
-
-    void MeshComponent::BindShaders(std::shared_ptr<CommandBuffer> &commandBuffer)
-    {
-        commandBuffer->BindShader(GetVertexShader());
-        commandBuffer->UnbindShaderStage(vk::ShaderStageFlagBits::eGeometry);
-        commandBuffer->BindShader(GetFragmentShader());
     }
 }

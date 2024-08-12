@@ -27,7 +27,7 @@ struct Light
 // Use LIGHT_DESCRIPTOR_SET to define the set for the lighting information
 #ifndef NO_LIGHT_DESCRIPTORS
 #ifndef LIGHT_DESCRIPTOR_SET
-#define LIGHT_DESCRIPTOR_SET 2
+#define LIGHT_DESCRIPTOR_SET 1
 #endif
 
 layout(set = LIGHT_DESCRIPTOR_SET, binding = 0) uniform LightInfo

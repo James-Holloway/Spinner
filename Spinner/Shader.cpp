@@ -4,7 +4,6 @@
 #include "Graphics.hpp"
 #include "Buffer.hpp"
 #include "Texture.hpp"
-#include "SceneDescriptors.hpp"
 
 namespace Spinner
 {
@@ -20,11 +19,6 @@ namespace Spinner
         {
             throw std::runtime_error("Cannot create a shader with an invalid DescriptorSetLayout from ShaderCreateInfo");
         }
-
-        // Push scene descriptor set after shader's sets
-        auto sceneDescriptorSet = SceneDescriptors::GetDescriptorSetLayout();
-        SceneDescriptorSetIndex = static_cast<uint32_t>(DescriptorSetLayouts.size());
-        DescriptorSetLayouts.push_back(sceneDescriptorSet);
 
         // Pipeline layout
         auto pushConstants = GetPushConstantRanges(0); // WARNING: Only takes push constants from the first descriptor set layout
@@ -257,11 +251,6 @@ namespace Spinner
         return InvalidBindingIndex;
     }
 
-    uint32_t Shader::GetSceneDescriptorSetIndex() const
-    {
-        return SceneDescriptorSetIndex;
-    }
-
     uint32_t Shader::GetLightingDescriptorSetIndex() const
     {
         return LightingDescriptorSetIndex;
@@ -297,6 +286,10 @@ namespace Spinner
     {
         for (auto &sets : VkDescriptorSets)
         {
+            if (!sets.empty())
+            {
+                DescriptorPool->FreeDescriptorSets(sets);
+            }
             sets.clear();
         }
     }

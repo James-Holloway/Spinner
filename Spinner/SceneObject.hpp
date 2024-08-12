@@ -23,11 +23,6 @@ namespace Spinner
             friend class SceneObject;
 
         public:
-            inline ComponentPtr()
-            {
-                SceneObject.reset();
-                ComponentIndex = 0;
-            }
             inline explicit ComponentPtr(const std::weak_ptr<SceneObject> &sceneObject, int64_t componentIndex)
             {
                 SceneObject = sceneObject;
@@ -46,11 +41,6 @@ namespace Spinner
 
             // Declared further down as it requires access to SceneObject's templated functions
             T *operator->() const;
-
-            inline T *GetRaw()
-            {
-                return this->operator->();
-            };
 
         protected:
             /// Used internally by SceneObject

@@ -61,7 +61,6 @@ namespace Spinner
         void CopyBufferToImage(const vk::Buffer &srcBuffer, vk::Image &dstImage, vk::ImageLayout dstImageLayout, const vk::ArrayProxy<const vk::BufferImageCopy> &regions) const;
         void CopyBufferToImage(const vk::Buffer &srcBuffer, vk::Image &dstImage, vk::ImageLayout dstImageLayout, uint32_t regionCount, vk::BufferImageCopy *regions) const;
 
-        void BeginRendering(vk::ImageView colorAttachment, vk::ImageView depthAttachment, vk::Rect2D renderArea, vk::ClearColorValue colorClearValue = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f), vk::ClearDepthStencilValue depthClearValue = vk::ClearDepthStencilValue(1.0f, 0u), vk::AttachmentLoadOp colorLoadOp = vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp colorStoreOp = vk::AttachmentStoreOp::eStore, vk::AttachmentLoadOp depthLoadOp = vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp depthStoreOp = vk::AttachmentStoreOp::eStore, float minDepth = 0.0f, float maxDepth = 1.0f);
         void BeginRendering(const vk::RenderingInfo &renderingInfo, vk::Extent2D extent, float minDepth = 0.0f, float maxDepth = 1.0f);
         void EndRendering();
 

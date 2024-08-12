@@ -55,7 +55,6 @@ namespace Spinner
         [[nodiscard]] vk::DescriptorSetLayout GetDescriptorSetLayout(uint32_t index) const;
         [[nodiscard]] std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
         [[nodiscard]] vk::DescriptorSetLayout GetLightingDescriptorSetLayout() const;
-        [[nodiscard]] uint32_t GetSceneDescriptorSetIndex() const;
         [[nodiscard]] uint32_t GetLightingDescriptorSetIndex() const;
         [[nodiscard]] vk::PipelineLayout GetPipelineLayout() const;
 
@@ -72,7 +71,6 @@ namespace Spinner
         std::vector<DescriptorSetLayout::Pointer> DescriptorSetLayouts;
         DescriptorSetLayout::Pointer LightingDescriptorSetLayout;
         vk::PipelineLayout VkPipelineLayout;
-        uint32_t SceneDescriptorSetIndex = InvalidBindingIndex;
         uint32_t LightingDescriptorSetIndex = InvalidBindingIndex;
 
     public:

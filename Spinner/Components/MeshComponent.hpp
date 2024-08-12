@@ -42,8 +42,6 @@ namespace Spinner
             Spinner::ShaderInstance::Pointer GetVertexShaderInstance();
             Spinner::ShaderInstance::Pointer GetFragmentShaderInstance();
             Spinner::MeshBuffer::Pointer GetMeshBuffer();
-            Spinner::Shader::Pointer GetVertexShader();
-            Spinner::Shader::Pointer GetFragmentShader();
 
             void SetVertexShaderInstance(Spinner::ShaderInstance::Pointer newShaderInstance);
             void SetFragmentShaderInstance(Spinner::ShaderInstance::Pointer newShaderInstance);
@@ -52,15 +50,13 @@ namespace Spinner
             [[nodiscard]] Spinner::Material::Pointer GetMaterial();
             void SetMaterial(const Spinner::Material::Pointer &material);
 
-            void Update(const std::shared_ptr<Lighting> &lighting, uint32_t currentFrame);
+            void Update(const std::shared_ptr<Scene> &scene, uint32_t currentFrame);
             void Draw(const std::shared_ptr<CommandBuffer> &commandBuffer);
 
             void PopulateFromShaders(const Spinner::Shader::Pointer &vertexShader, const Spinner::Shader::Pointer &fragmentShader, const Spinner::DescriptorPool::Pointer &descriptorPool);
 
             void UpdateConstantBuffer(const ConstantBufferType &constants);
             ConstantBufferType GetMeshConstants();
-
-            void BindShaders(std::shared_ptr<CommandBuffer> &commandBuffer);
 
             void RenderDebugUI();
         };

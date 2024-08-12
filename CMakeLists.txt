@@ -93,16 +93,6 @@ add_library(Spinner OBJECT
         Spinner/Input.cpp
         Spinner/Input.hpp
         Spinner/Key.hpp
-        Spinner/RenderTexture.cpp
-        Spinner/RenderTexture.hpp
-        Spinner/SceneDescriptors.cpp
-        Spinner/SceneDescriptors.hpp
-        Spinner/DrawManager.cpp
-        Spinner/DrawManager.hpp
-        Spinner/UpdateDescriptors.cpp
-        Spinner/UpdateDescriptors.hpp
-        Spinner/RenderTarget.cpp
-        Spinner/RenderTarget.hpp
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 
