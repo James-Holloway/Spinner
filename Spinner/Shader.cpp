@@ -450,9 +450,9 @@ namespace Spinner
             default:
                 throw std::runtime_error("Unhandled shader stage");
             case vk::ShaderStageFlagBits::eVertex:
-                return shaderName + "_vert.spv";
+                return shaderName + ".vert.spv";
             case vk::ShaderStageFlagBits::eFragment:
-                return shaderName + "_frag.spv";
+                return shaderName + ".frag.spv";
         }
     }
 } // Spinner

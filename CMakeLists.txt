@@ -11,6 +11,9 @@ find_package(glm REQUIRED)
 find_package(glfw3 REQUIRED 3.4)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
+include(cmake/Shaders.cmake)
+include(cmake/Assets.cmake)
+
 add_subdirectory(ThirdParty/tinygltf)
 
 add_library(imgui STATIC
@@ -100,3 +103,15 @@ add_executable(SpinnerTestApp
         main.cpp
 )
 target_link_libraries(SpinnerTestApp PRIVATE Spinner)
+
+# Shaders (creates SpinnerShaders target)
+compile_shaders(Spinner
+        Shaders/staticmesh.vert
+        Shaders/staticmesh.frag
+)
+
+# Asset Files (note: cannot be applied to OBJECT library)
+set_assets(SpinnerTestApp SYMLINK FILES
+        Assets/Models
+        Assets/Textures/DuckCM.png
+)

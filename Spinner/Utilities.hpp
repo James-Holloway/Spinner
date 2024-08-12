@@ -58,17 +58,15 @@ namespace Spinner
         switch (assetType)
         {
             case AssetType::Shader:
-                assetName = "Shaders/Compiled/" + assetName;
+                assetName = "Shaders/" + assetName;
                 break;
             case AssetType::Model:
-                assetName = "Models/" + assetName;
-                break;
             case AssetType::Texture:
-                assetName = "Textures/" + assetName;
+                assetName = "Assets/" + assetName;
                 break;
         }
 
-        return currentDirectory.string() + "/Assets/" + assetName;
+        return currentDirectory.string() + "/" + assetName;
     }
 
     inline bool FileExists(const std::string &filePath)
