@@ -429,7 +429,7 @@ namespace Spinner
 
     void Graphics::DrawFrame()
     {
-        vk::resultCheck(Device.waitForFences(1, &InFlightGraphicsFences[CurrentFrame], true, std::numeric_limits<uint64_t>::max()), "Failed while waiting for previous frame fence");
+        vk::detail::resultCheck(Device.waitForFences(1, &InFlightGraphicsFences[CurrentFrame], true, std::numeric_limits<uint64_t>::max()), "Failed while waiting for previous frame fence");
 
         // Acquire next image
         uint32_t imageIndex = 0;
@@ -535,7 +535,7 @@ namespace Spinner
 
         commandBuffer->Completed();
 
-        vk::resultCheck(result, "Single time command failed");
+        vk::detail::resultCheck(result, "Single time command failed");
     }
 
     std::vector<CommandBuffer::Pointer> Graphics::CreateCommandBuffers(uint32_t count, bool secondary)

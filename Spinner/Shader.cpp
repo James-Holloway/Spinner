@@ -79,7 +79,9 @@ namespace Spinner
         shaderCreateInfo.pName = "main";
         shaderCreateInfo.setCode<char>(shaderSPIRV);
         shaderCreateInfo.setSetLayouts(descriptorSetLayouts);
-        shader->VkShader = device.createShaderEXT(shaderCreateInfo, nullptr, VulkanInstance::GetDispatchLoader());
+        auto result = device.createShaderEXT(shaderCreateInfo, nullptr, VulkanInstance::GetDispatchLoader());
+        vk::detail::resultCheck(result.result, "Could not create shader object");
+        shader->VkShader = result.value;
 
         return shader;
     }
@@ -140,10 +142,11 @@ namespace Spinner
         }
 
         auto vkShaders = device.createShadersEXT(shaderCreateInfos, nullptr, VulkanInstance::GetDispatchLoader());
+        vk::detail::resultCheck(vkShaders.result, "Could not create shader objects");
 
         for (int i = 0; i < shaders.size(); i++)
         {
-            shaders[i]->VkShader = vkShaders[i];
+            shaders[i]->VkShader = vkShaders.value[i];
         }
 
         return shaders;
