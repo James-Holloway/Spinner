@@ -99,10 +99,13 @@ add_library(Spinner OBJECT
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 
-add_executable(SpinnerTestApp
-        main.cpp
+add_executable(SpinnerApp
+        SpinnerApp/main.cpp
+        SpinnerApp/SpinnerApp.cpp
+        SpinnerApp/SpinnerApp.hpp
 )
-target_link_libraries(SpinnerTestApp PRIVATE Spinner)
+target_link_libraries(SpinnerApp PRIVATE Spinner)
+target_include_directories(SpinnerApp PUBLIC "${CMAKE_SOURCE_DIR}")
 
 # Shaders (creates SpinnerShaders target)
 compile_shaders(Spinner
@@ -111,7 +114,7 @@ compile_shaders(Spinner
 )
 
 # Asset Files (note: cannot be applied to OBJECT library)
-set_assets(SpinnerTestApp SYMLINK FILES
+set_assets(SpinnerApp SYMLINK FILES
         Assets/Models
         Assets/Textures/DuckCM.png
 )

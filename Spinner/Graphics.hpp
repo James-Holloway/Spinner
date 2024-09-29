@@ -24,7 +24,7 @@ namespace Spinner
         explicit Graphics(const std::shared_ptr<Spinner::Window> &mainWindow, std::vector<const char *> deviceExtensions);
         ~Graphics() override;
 
-    protected:
+    public:
         vk::PhysicalDevice PhysicalDevice;
         vk::Device Device;
         vma::Allocator Allocator;

@@ -22,31 +22,18 @@ namespace Spinner
     protected:
         std::shared_ptr<Spinner::Window> MainWindow;
         std::shared_ptr<Spinner::Graphics> Graphics;
-        Spinner::Scene::Pointer Scene;
-        Spinner::ImGuiInstance::Pointer ImGuiInstance;
-        Spinner::Lighting::Pointer Lighting;
-
-        Spinner::Image::Pointer DepthImage;
-        bool ViewDebugUI = true;
         double FrameDeltaTime = 0.0f;
-
-        float MouseSensitivity = 1.0f;
-        int BaseMovementSpeed = 0;
-        
-        constexpr static float BaseMovementSpeedModifier = 1.0f / 16.0f;
 
     public:
         void Run();
 
     protected:
-        virtual void AppInit();
-        virtual void AppRender(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex);
-        virtual void AppCleanup();
-        virtual void AppUpdate();
-        virtual void AppImGui();
-        void RecreateDepthImage();
+        virtual void AppInit() = 0;
+        virtual void AppRender(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex) = 0;
+        virtual void AppCleanup() = 0;
+        virtual void AppUpdate() = 0;
+        virtual void AppImGui() = 0;
     };
-
 } // Spinner
 
 #endif //SPINNER_APP_HPP
