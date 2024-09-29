@@ -1,6 +1,5 @@
 #include "SpinnerApp.hpp"
 #include "Spinner/MeshData/StaticMeshVertex.hpp"
-#include "Spinner/Components/CameraComponent.hpp"
 
 using namespace Spinner;
 
@@ -25,6 +24,10 @@ void SpinnerApp::AppInit()
     // Scene
     Scene = std::make_shared<Spinner::Scene>("Main Scene");
 
+    // Draw Manager
+    DrawManager = std::make_shared<Spinner::DrawManager>();
+    DrawManager->SetScene(Scene);
+
     MeshData::StaticMeshVertex::CreateShaders();
 
     auto testObject = Scene::LoadModel("sponza lit.glb");
@@ -35,8 +38,8 @@ void SpinnerApp::AppInit()
     }
 
     auto cameraObject = SceneObject::Create("Main Camera");
-    auto camera = cameraObject->AddComponent<Components::CameraComponent>();
-    camera->SetActiveCamera();
+    Camera = cameraObject->AddComponent<Components::CameraComponent>();
+    Camera->SetActiveCamera();
     cameraObject->SetLocalPosition({0, 1, 1.5f});
     cameraObject->SetLocalRotation({1, 0, 0, 0});
     cameraObject->SetLocalEulerRotation({0, 180, 0});
@@ -103,7 +106,7 @@ void SpinnerApp::AppRender(Spinner::CommandBuffer::Pointer &commandBuffer, uint3
 
         commandBuffer->BeginRendering(renderingInfo, Graphics::GetSwapchainExtent());
 
-        Scene->Draw(currentFrame, commandBuffer);
+        DrawManager->Render(commandBuffer);
 
         commandBuffer->EndRendering();
     }
@@ -149,7 +152,7 @@ void SpinnerApp::AppCleanup()
 
 void SpinnerApp::AppUpdate()
 {
-    Scene->Update(Graphics->CurrentFrame);
+    DrawManager->Update(Camera);
 
     auto input = Graphics::GetInput();
     if (input->GetKeyPressed(Key::F3))
@@ -230,11 +233,11 @@ void SpinnerApp::AppUpdate()
 
             // Scroll in and out to change movement speed
             const auto scrollY = static_cast<float>(input->GetVerticalScrollDelta());
-            if (scrollY < 0.0f && BaseMovementSpeed > -16)
+            if (scrollY < 0.0f && BaseMovementSpeed > 0)
             {
                 BaseMovementSpeed -= 1;
             }
-            else if (scrollY > 0.0f && BaseMovementSpeed < 16)
+            else if (scrollY > 0.0f && BaseMovementSpeed < MaxBaseMovementSpeed)
             {
                 BaseMovementSpeed += 1;
             }

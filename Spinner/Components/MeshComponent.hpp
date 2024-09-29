@@ -50,7 +50,7 @@ namespace Spinner
             [[nodiscard]] Spinner::Material::Pointer GetMaterial();
             void SetMaterial(const Spinner::Material::Pointer &material);
 
-            void Update(const std::shared_ptr<Scene> &scene, uint32_t currentFrame);
+            void Update(const std::shared_ptr<Scene> &scene, const Buffer::Pointer &sceneBuffer, uint32_t currentFrame);
             void Draw(const std::shared_ptr<CommandBuffer> &commandBuffer);
 
             void PopulateFromShaders(const Spinner::Shader::Pointer &vertexShader, const Spinner::Shader::Pointer &fragmentShader, const Spinner::DescriptorPool::Pointer &descriptorPool);

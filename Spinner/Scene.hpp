@@ -23,13 +23,8 @@ namespace Spinner
 
     public:
         bool AddObjectToScene(const SceneObject::Pointer &object, SceneObject::Pointer parent = nullptr);
-        void Update(uint32_t currentFrame);
-        void Draw(uint32_t currentFrame, CommandBuffer::Pointer &commandBuffer);
         [[nodiscard]] bool IsActive() const noexcept;
         void SetActive(bool active);
-        Buffer::Pointer GetSceneBuffer();
-        [[nodiscard]] SceneConstants GetSceneConstants() const noexcept;
-        void UpdateSceneConstants(const SceneConstants &sceneConstants) noexcept;
         [[nodiscard]] std::shared_ptr<Spinner::Lighting> GetLighting() const noexcept;
 
         [[nodiscard]] SceneObject::Pointer GetObjectTree();
@@ -40,8 +35,6 @@ namespace Spinner
     protected:
         std::string Name;
         SceneObject::Pointer ObjectTree;
-        Buffer::Pointer SceneBuffer;
-        SceneConstants LocalSceneBuffer{};
         std::shared_ptr<Spinner::Lighting> Lighting;
 
         bool Active = true;

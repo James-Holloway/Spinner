@@ -90,7 +90,7 @@ namespace Spinner::Components
         return LocalConstantBuffer;
     }
 
-    void MeshComponent::Update(const std::shared_ptr<Scene> &scene, uint32_t currentFrame)
+    void MeshComponent::Update(const std::shared_ptr<Scene> &scene, const Buffer::Pointer &sceneBuffer, uint32_t currentFrame)
     {
         if (Material != nullptr)
         {
@@ -115,10 +115,10 @@ namespace Spinner::Components
         // Used for updating each frame
         if (ConstantBindingsDirty[currentFrame])
         {
-            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
+            VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, sceneBuffer);
             VertexShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
 
-            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, scene->GetSceneBuffer());
+            FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 0, sceneBuffer);
             FragmentShaderInstance->UpdateDescriptorBuffer(currentFrame, 1, ConstantBuffer);
 
             ConstantBindingsDirty[currentFrame] = false;

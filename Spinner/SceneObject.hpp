@@ -23,6 +23,10 @@ namespace Spinner
             friend class SceneObject;
 
         public:
+            ComponentPtr() : ComponentIndex(0)
+            {
+            }
+
             inline explicit ComponentPtr(const std::weak_ptr<SceneObject> &sceneObject, int64_t componentIndex)
             {
                 SceneObject = sceneObject;
@@ -344,7 +348,7 @@ namespace Spinner
         bool DirtyWorldMatrix = true;
 
     public:
-        static Pointer Create(const std::string& name);
+        static Pointer Create(const std::string &name);
     };
 
     // Implementation that was mentioned further up
@@ -358,7 +362,6 @@ namespace Spinner
 
         return SceneObject.lock()->GetComponentRawPointer<T>(ComponentIndex);
     }
-
 } // Spinner
 
 #endif //SPINNER_SCENEOBJECT_HPP

@@ -96,6 +96,8 @@ add_library(Spinner OBJECT
         Spinner/Input.cpp
         Spinner/Input.hpp
         Spinner/Key.hpp
+        Spinner/DrawManager.cpp
+        Spinner/DrawManager.hpp
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 

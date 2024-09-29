@@ -2,6 +2,8 @@
 #define SPINNERAPP_HPP
 
 #include "Spinner/App.hpp"
+#include "Spinner/DrawManager.hpp"
+#include "Spinner/Components/CameraComponent.hpp"
 
 class SpinnerApp final : public Spinner::App
 {
@@ -13,6 +15,9 @@ protected:
     Spinner::Scene::Pointer Scene;
     Spinner::ImGuiInstance::Pointer ImGuiInstance;
     Spinner::Lighting::Pointer Lighting;
+    Spinner::Components::ComponentPtr<Spinner::Components::CameraComponent> Camera;
+
+    Spinner::DrawManager::Pointer DrawManager;
 
     Spinner::Image::Pointer DepthImage;
     bool ViewDebugUI = true;
@@ -21,6 +26,7 @@ protected:
     int BaseMovementSpeed = 0;
 
     constexpr static float BaseMovementSpeedModifier = 1.0f / 16.0f;
+    constexpr static int MaxBaseMovementSpeed = 8;
 
     void AppInit() override;
     void AppRender(Spinner::CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex) override;
