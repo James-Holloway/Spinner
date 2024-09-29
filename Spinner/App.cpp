@@ -2,9 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "MeshData/StaticMeshVertex.hpp"
-#include "Components/MeshComponent.hpp"
 #include "Components/CameraComponent.hpp"
-#include "Components/LightComponent.hpp"
 
 namespace Spinner
 {
@@ -13,11 +11,11 @@ namespace Spinner
         glfwInit();
 
 #ifdef NDEBUG
-        bool debug = false;
+        constexpr bool debug = false;
 #else
-        bool debug = true;
+        constexpr bool debug = true;
 #endif
-        const unsigned int vulkanVersion = vk::ApiVersion13;
+        constexpr unsigned int vulkanVersion = vk::ApiVersion13;
 
         VulkanInstance::CreateInstance(appName, vulkanVersion, appVersion, debug, {}, {});
 
@@ -35,13 +33,6 @@ namespace Spinner
 
     App::~App()
     {
-        if (Graphics != nullptr)
-        {
-            Graphics::GetDevice().waitIdle();
-        }
-
-        AppCleanup();
-
         Scene.reset();
         Graphics.reset();
 
@@ -86,6 +77,14 @@ namespace Spinner
         {
             std::cerr << "Exception occurred: " << e.what() << std::endl;
         }
+
+        // Cleanup
+        if (Graphics != nullptr)
+        {
+            Graphics::GetDevice().waitIdle();
+        }
+
+        AppCleanup();
     }
 
     void App::AppInit()
@@ -309,11 +308,11 @@ namespace Spinner
 
                 // Scroll in and out to change movement speed
                 const auto scrollY = static_cast<float>(input->GetVerticalScrollDelta());
-                if (scrollY < 0.0f)
+                if (scrollY < 0.0f && BaseMovementSpeed > -16)
                 {
                     BaseMovementSpeed -= 1;
                 }
-                else if (scrollY > 0.0f)
+                else if (scrollY > 0.0f && BaseMovementSpeed < 16)
                 {
                     BaseMovementSpeed += 1;
                 }

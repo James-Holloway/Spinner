@@ -22,12 +22,12 @@
 
 namespace Spinner
 {
-    constexpr static const glm::vec3 AxisForward = {0, 0, 1};
-    constexpr static const glm::vec3 AxisBackward = {0, 0, -1};
-    constexpr static const glm::vec3 AxisRight = {1, 0, 0};
-    constexpr static const glm::vec3 AxisLeft = {-1, 0, 0};
-    constexpr static const glm::vec3 AxisUp = {0, 1, 0};
-    constexpr static const glm::vec3 AxisDown = {0, -1, 0};
+    constexpr static glm::vec3 AxisForward = {0, 0, 1};
+    constexpr static glm::vec3 AxisBackward = {0, 0, -1};
+    constexpr static glm::vec3 AxisRight = {1, 0, 0};
+    constexpr static glm::vec3 AxisLeft = {-1, 0, 0};
+    constexpr static glm::vec3 AxisUp = {0, 1, 0};
+    constexpr static glm::vec3 AxisDown = {0, -1, 0};
 }
 
 #endif //SPINNER_GLM_HPP

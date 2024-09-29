@@ -40,29 +40,27 @@ namespace Spinner
                 // Return early if the binding could not be found from the index and type
                 return;
             }
-            else
-            {
-                if (texture == nullptr) // if no texture bound
-                {
-                    switch (DefaultTextureTypes.at(textureIndex))
-                    {
-                        case DefaultTextureType::Black:
-                            texture = Texture::GetBlackTexture();
-                            break;
-                        case DefaultTextureType::White:
-                            texture = Texture::GetWhiteTexture();
-                            break;
-                        case DefaultTextureType::Transparent:
-                            texture = Texture::GetTransparentTexture();
-                            break;
-                        case DefaultTextureType::Magenta:
-                            texture = Texture::GetMagentaTexture();
-                            break;
-                    }
-                }
 
-                shaderInstance->UpdateDescriptorImage(Graphics::GetCurrentFrame(), binding, texture, vk::ImageLayout::eShaderReadOnlyOptimal);
+            if (texture == nullptr) // if no texture bound
+            {
+                switch (DefaultTextureTypes.at(textureIndex))
+                {
+                    case DefaultTextureType::Black:
+                        texture = Texture::GetBlackTexture();
+                        break;
+                    case DefaultTextureType::White:
+                        texture = Texture::GetWhiteTexture();
+                        break;
+                    case DefaultTextureType::Transparent:
+                        texture = Texture::GetTransparentTexture();
+                        break;
+                    case DefaultTextureType::Magenta:
+                        texture = Texture::GetMagentaTexture();
+                        break;
+                }
             }
+
+            shaderInstance->UpdateDescriptorImage(Graphics::GetCurrentFrame(), binding, texture, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
     }
 
@@ -210,7 +208,6 @@ namespace Spinner
             {
                 switch (GetDefaultTextureType(i))
                 {
-
                     case DefaultTextureType::Black:
                         ImGui::Text("Default Black Texture");
                         break;
