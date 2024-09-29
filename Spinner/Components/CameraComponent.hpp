@@ -31,6 +31,9 @@ namespace Spinner
             void SetFarZ(float farZ) noexcept;
             void UpdateSceneConstants(SceneConstants &sceneConstants);
 
+            void RotateEuler(glm::vec3 euler, bool clampPitch = true, bool unlockRoll = false);
+            void MoveRelative(glm::vec3 direction);
+
             void RenderDebugUI();
 
         protected:

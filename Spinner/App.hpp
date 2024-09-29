@@ -12,7 +12,6 @@
 #include "Lighting.hpp"
 
 namespace Spinner
-
 {
     class App : public Object
     {
@@ -29,15 +28,22 @@ namespace Spinner
 
         Spinner::Image::Pointer DepthImage;
         bool ViewDebugUI = true;
+        double FrameDeltaTime = 0.0f;
+
+        float MouseSensitivity = 1.0f;
+        int BaseMovementSpeed = 0;
+        
+        constexpr static float BaseMovementSpeedModifier = 1.0f / 16.0f;
 
     public:
         void Run();
 
     protected:
         virtual void AppInit();
-        virtual void DrawScene(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex);
+        virtual void AppRender(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex);
         virtual void AppCleanup();
         virtual void AppUpdate();
+        virtual void AppImGui();
         void RecreateDepthImage();
     };
 

@@ -41,6 +41,32 @@ namespace Spinner
         }
     }
 
+    static void CursorPositionCallback(GLFWwindow *window, double xPos, double yPos)
+    {
+        void *userPointer = glfwGetWindowUserPointer(window);
+        if (userPointer != nullptr)
+        {
+            auto input = reinterpret_cast<Window*>(userPointer)->GetInput();
+            if (input != nullptr)
+            {
+                input->SetCursorPosition(xPos, yPos);
+            }
+        }
+    }
+
+    static void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+    {
+        void* userPointer = glfwGetWindowUserPointer(window);
+        if (userPointer != nullptr)
+        {
+            auto input = reinterpret_cast<Window*>(userPointer)->GetInput();
+            if (input != nullptr)
+            {
+                input->SetScrollOffset(xOffset, yOffset);
+            }
+        }
+    }
+
     void Window::Create(int width, int height, const std::string &title)
     {
         if (GLFWWindow != nullptr)
@@ -66,6 +92,8 @@ namespace Spinner
         glfwSetFramebufferSizeCallback(GLFWWindow, &FrameBufferResizeCallback);
         glfwSetKeyCallback(GLFWWindow, &KeyCallback);
         glfwSetMouseButtonCallback(GLFWWindow, &MouseButtonCallback);
+        glfwSetCursorPosCallback(GLFWWindow, &CursorPositionCallback);
+        glfwSetScrollCallback(GLFWWindow, &ScrollCallback);
     }
 
     void Window::Destroy()

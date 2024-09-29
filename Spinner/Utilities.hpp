@@ -11,6 +11,14 @@
 
 namespace Spinner
 {
+    template<typename T>
+    inline constexpr T HALF_PI = std::numbers::pi_v<T> / 2.0f;
+    template<typename T>
+    inline constexpr T PI = std::numbers::pi_v<T>;
+    template<typename T>
+    inline constexpr T TAU = std::numbers::pi_v<T> * 2.0f;
+
+
     inline bool Contains(const std::string &haystack, const std::string &needle)
     {
         return haystack.find(needle) != std::string::npos;

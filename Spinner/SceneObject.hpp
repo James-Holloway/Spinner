@@ -72,7 +72,7 @@ namespace Spinner
         [[nodiscard]] std::string GetName() const;
         void SetName(const std::string &name);
 
-        [[nodiscard]] Pointer GetParent();
+        [[nodiscard]] Pointer GetParent() const;
         bool SetParent(const Pointer &newParent);
 
         void AddChild(const Pointer &newChild);
@@ -90,7 +90,7 @@ namespace Spinner
         glm::vec3 GetLocalEulerRotation();
         glm::vec3 GetLocalScale();
 
-        void SetLocalMatrix(glm::mat4 matrix);
+        void SetLocalMatrix(const glm::mat4 &matrix);
         void SetLocalPosition(glm::vec3 position);
         void SetLocalRotation(glm::quat rotation);
         void SetLocalEulerRotation(glm::vec3 eulerRotation);
@@ -101,6 +101,11 @@ namespace Spinner
         glm::vec3 GetWorldPosition();
         glm::quat GetWorldRotation();
         glm::vec3 GetWorldScale();
+
+        void SetWorldMatrix(const glm::mat4 &matrix);
+        void SetWorldPosition(glm::vec3 position);
+        void SetWorldRotation(glm::quat rotation);
+        void SetWorldScale(glm::vec3 scale);
 
         std::shared_ptr<Scene> GetSceneParent();
 
@@ -118,7 +123,7 @@ namespace Spinner
     public:
         // Components
 
-        bool HasComponent(Components::ComponentId componentId);
+        bool HasComponent(Components::ComponentId componentId) const;
 
         template<Components::IsComponent T>
         inline bool HasComponent()
@@ -126,7 +131,7 @@ namespace Spinner
             return HasComponent(Components::GetComponentId<T>());
         }
 
-        size_t ComponentCount(Components::ComponentId componentId);
+        size_t ComponentCount(Components::ComponentId componentId) const;
 
         template<Components::IsComponent T>
         inline size_t ComponentCount()
@@ -326,7 +331,7 @@ namespace Spinner
 
         glm::vec3 Position{0, 0, 0};
         glm::quat Rotation{1, 0, 0, 0};
-        glm::vec3 EulerRotation{0, 0, 0};
+        glm::vec3 EulerRotation{0, 0, 0}; // Operates in degrees
         glm::vec3 Scale{1, 1, 1};
         glm::mat4 Matrix{1.0f};
         glm::mat4 WorldMatrix{1.0f};
@@ -339,7 +344,7 @@ namespace Spinner
         bool DirtyWorldMatrix = true;
 
     public:
-        static Pointer Create(std::string name);
+        static Pointer Create(const std::string& name);
     };
 
     // Implementation that was mentioned further up

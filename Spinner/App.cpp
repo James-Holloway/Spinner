@@ -29,7 +29,7 @@ namespace Spinner
 
         SetSingleCallback(Graphics->RecordGraphicsCommandCallback, [this](CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex) -> void
         {
-            DrawScene(commandBuffer, currentFrame, imageIndex);
+            AppRender(commandBuffer, currentFrame, imageIndex);
         });
     }
 
@@ -65,17 +65,24 @@ namespace Spinner
             AppInit();
 
             auto input = Graphics::GetInput();
+            auto lastTime = std::chrono::high_resolution_clock::now();
             while (!MainWindow->ShouldClose())
             {
-                input->ResetFrameKeyState();
+                input->ResetFrameState();
                 Window::PollEvents();
+
+                auto nowTime = std::chrono::high_resolution_clock::now();
+                FrameDeltaTime = std::chrono::duration<double, std::chrono::seconds::period>(nowTime - lastTime).count();
+                lastTime = nowTime;
 
                 AppUpdate();
 
+                ImGuiInstance::StartFrame();
+                AppImGui();
+
                 Graphics->DrawFrame();
             }
-        }
-        catch (const std::exception &e)
+        } catch (const std::exception &e)
         {
             std::cerr << "Exception occurred: " << e.what() << std::endl;
         }
@@ -132,7 +139,7 @@ namespace Spinner
         MeshData::StaticMeshVertex::DestroyShaders();
     }
 
-    void App::DrawScene(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex)
+    void App::AppRender(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex)
     {
         if (DepthImage == nullptr)
         {
@@ -221,11 +228,101 @@ namespace Spinner
 
     void App::AppUpdate()
     {
-        ImGuiInstance::StartFrame();
-
-
         Scene->Update(Graphics->CurrentFrame);
 
+        auto input = Graphics::GetInput();
+        if (input->GetKeyPressed(Key::F3))
+        {
+            ViewDebugUI = !ViewDebugUI;
+        }
+
+        if (input->GetKeyDown(Key::MouseRight))
+        {
+            auto activeCamera = Components::CameraComponent::GetActiveCameraRawPointer();
+            if (activeCamera != nullptr)
+            {
+                glm::vec3 movementDirection{0.0f, 0.0f, 0.0f};
+                // Forward / Back
+                if (input->GetKeyDown(Key::W))
+                {
+                    movementDirection.z += 1.0f;
+                }
+                if (input->GetKeyDown(Key::S))
+                {
+                    movementDirection.z -= 1.0f;
+                }
+                // Right / Left
+                if (input->GetKeyDown(Key::A))
+                {
+                    movementDirection.x += 1.0f;
+                }
+                if (input->GetKeyDown(Key::D))
+                {
+                    movementDirection.x -= 1.0f;
+                }
+                // Up / Down
+                if (input->GetKeyDown(Key::E))
+                {
+                    movementDirection.y += 1.0f;
+                }
+                if (input->GetKeyDown(Key::Q))
+                {
+                    movementDirection.y -= 1.0f;
+                }
+
+                float movementSpeed = static_cast<float>(FrameDeltaTime) * 4.0f;
+
+                if (BaseMovementSpeed < 0)
+                {
+                    movementSpeed *= 1.0f - (static_cast<float>(1 << -BaseMovementSpeed) * BaseMovementSpeedModifier);
+                }
+                else if (BaseMovementSpeed > 0)
+                {
+                    movementSpeed *= 1.0f + (static_cast<float>(1 << BaseMovementSpeed) * BaseMovementSpeedModifier);
+                }
+
+                if (input->GetKeyDown(Key::LeftShift))
+                {
+                    movementSpeed *= 4.0f;
+                }
+                if (input->GetKeyDown(Key::LeftControl))
+                {
+                    movementSpeed /= 4.0f;
+                }
+
+                if (movementDirection.x != 0.0f || movementDirection.y != 0.0f || movementDirection.z != 0.0f)
+                {
+                    movementDirection = glm::normalize(movementDirection) * movementSpeed;
+                    activeCamera->MoveRelative(movementDirection);
+                }
+
+                // Euler rotation is in degrees, so 90 is in degrees
+                float cameraRotationSpeed = 45.0f * MouseSensitivity * 0.01f;
+                double cameraX = 0.0, cameraY = 0.0;
+                input->GetCursorDeltaPosition(cameraX, cameraY);
+
+                if (cameraX != 0.0f || cameraY != 0.0f)
+                {
+                    const glm::vec3 cameraRotation{cameraRotationSpeed * cameraY, cameraRotationSpeed * -cameraX, 0.0f};
+                    activeCamera->RotateEuler(cameraRotation);
+                }
+
+                // Scroll in and out to change movement speed
+                const auto scrollY = static_cast<float>(input->GetVerticalScrollDelta());
+                if (scrollY < 0.0f)
+                {
+                    BaseMovementSpeed -= 1;
+                }
+                else if (scrollY > 0.0f)
+                {
+                    BaseMovementSpeed += 1;
+                }
+            }
+        }
+    }
+
+    void App::AppImGui()
+    {
         auto extentUint = Graphics::GetSwapchainExtent();
         auto extentImGui = ImVec2(static_cast<float>(extentUint.width), static_cast<float>(extentUint.height));
 
@@ -250,12 +347,6 @@ namespace Spinner
 
                 ImGui::End();
             }
-        }
-
-        auto input = Graphics::GetInput();
-        if (input->GetKeyPressed(Key::F3))
-        {
-            ViewDebugUI = !ViewDebugUI;
         }
     }
 

@@ -57,7 +57,6 @@ namespace Spinner
         static SceneObject::Pointer LoadModel(const std::string &modelFilename);
         [[nodiscard]] static std::shared_ptr<Spinner::Lighting> GetGlobalLighting();
     };
-
 } // Spinner
 
 #endif //SPINNER_SCENE_HPP

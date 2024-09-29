@@ -4,6 +4,8 @@
 #include "../Graphics.hpp"
 #include <imgui.h>
 
+#include "../Utilities.hpp"
+
 namespace Spinner
 {
     namespace Components
@@ -12,7 +14,6 @@ namespace Spinner
 
         CameraComponent::CameraComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex) : Component(sceneObject, Components::GetComponentId<CameraComponent>(), componentIndex)
         {
-
         }
 
         bool CameraComponent::IsActiveCamera()
@@ -87,6 +88,37 @@ namespace Spinner
             sceneConstants.ViewProjection = sceneConstants.Projection * view;
         }
 
+        void CameraComponent::RotateEuler(const glm::vec3 euler, bool clampPitch, bool unlockRoll)
+        {
+            auto sceneObject = GetSceneObject();
+            if (sceneObject == nullptr) return;
+
+            auto rot = sceneObject->GetLocalEulerRotation() + euler;
+            // modulo 360, allows negative values
+            rot = {fmodf(rot.x, 360.0f), fmodf(rot.y, 360.0f), fmodf(rot.z, 360.0f)};
+
+            if (clampPitch)
+            {
+                rot.x = glm::clamp(rot.x, -89.0f, 89.0f);
+            }
+
+            if (!unlockRoll)
+            {
+                rot.z = 0.0f;
+            }
+
+            sceneObject->SetLocalEulerRotation(rot);
+        }
+
+        void CameraComponent::MoveRelative(const glm::vec3 direction)
+        {
+            auto sceneObject = GetSceneObject();
+            if (sceneObject == nullptr) return;
+
+            auto deltaPosition = sceneObject->GetWorldRotation() * direction;
+            sceneObject->SetWorldPosition(sceneObject->GetWorldPosition() + deltaPosition);
+        }
+
         CameraComponent *CameraComponent::GetActiveCameraRawPointer()
         {
             if (ActiveCameraComponent.first.expired())
@@ -100,7 +132,7 @@ namespace Spinner
         void CameraComponent::RenderDebugUI()
         {
             BaseRenderDebugUI();
-            
+
             float fov = GetFOV();
             if (ImGui::DragFloat("FOV", &fov, 0.1f, 0.5f, 175.0f))
             {

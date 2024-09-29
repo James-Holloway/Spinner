@@ -10,7 +10,6 @@ namespace Spinner
 {
     SceneObject::SceneObject(std::string name, bool isScene) : Name(std::move(name)), IsScene(isScene)
     {
-
     }
 
     std::string SceneObject::GetName() const
@@ -23,7 +22,7 @@ namespace Spinner
         Name = name;
     }
 
-    SceneObject::Pointer SceneObject::GetParent()
+    SceneObject::Pointer SceneObject::GetParent() const
     {
         return Parent.lock();
     }
@@ -219,7 +218,7 @@ namespace Spinner
         SetWorldMatrixDirty();
     }
 
-    void SceneObject::SetLocalMatrix(glm::mat4 matrix)
+    void SceneObject::SetLocalMatrix(const glm::mat4 &matrix)
     {
         if (IsScene)
             return;
@@ -284,7 +283,56 @@ namespace Spinner
         return scale;
     }
 
-    bool SceneObject::HasComponent(Components::ComponentId componentId)
+    void SceneObject::SetWorldMatrix(const glm::mat4 &matrix)
+    {
+        auto parent = GetParent();
+        if (parent == nullptr)
+        {
+            SetLocalMatrix(matrix);
+            return;
+        }
+        SetLocalMatrix(parent->GetInverseWorldMatrix() * matrix);
+    }
+
+    void SceneObject::SetWorldPosition(const glm::vec3 position)
+    {
+        auto parent = GetParent();
+        if (parent == nullptr)
+        {
+            SetLocalPosition(position);
+            return;
+        }
+
+        const glm::vec3 newPosition = parent->GetInverseWorldMatrix() * glm::vec4{position, 1.0f}; // Implicit cast of vec4 to vec3
+        SetLocalPosition(newPosition);
+    }
+
+    void SceneObject::SetWorldRotation(const glm::quat rotation)
+    {
+        auto parent = GetParent();
+        if (parent == nullptr)
+        {
+            SetLocalRotation(rotation);
+            return;
+        }
+
+        const glm::quat newRotation = rotation * glm::inverse(parent->GetWorldRotation());
+        SetLocalRotation(newRotation);
+    }
+
+    void SceneObject::SetWorldScale(const glm::vec3 scale)
+    {
+        auto parent = GetParent();
+        if (parent == nullptr)
+        {
+            SetLocalScale(scale);
+            return;
+        }
+
+        SetLocalScale(scale / parent->GetWorldScale());
+    }
+
+    bool SceneObject::HasComponent(Components::ComponentId componentId) const
     {
         for (const auto &component : Components)
         {
@@ -296,7 +344,7 @@ namespace Spinner
         return false;
     }
 
-    size_t SceneObject::ComponentCount(Components::ComponentId componentId)
+    size_t SceneObject::ComponentCount(Components::ComponentId componentId) const
     {
         size_t count = 0;
         for (const auto &component : Components)
@@ -385,7 +433,7 @@ namespace Spinner
         return scene;
     }
 
-    SceneObject::Pointer SceneObject::Create(std::string name)
+    SceneObject::Pointer SceneObject::Create(const std::string& name)
     {
         return std::make_shared<Spinner::SceneObject>(name);
     }
@@ -481,5 +529,4 @@ namespace Spinner
 
         ImGui::Unindent(8);
     }
-
 } // Spinner
