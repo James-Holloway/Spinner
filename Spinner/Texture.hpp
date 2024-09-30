@@ -44,6 +44,7 @@ namespace Spinner
         static Texture::Pointer GetWhiteTexture();
         static Texture::Pointer GetTransparentTexture();
         static Texture::Pointer GetMagentaTexture();
+        static Texture::Pointer GetBlankNormal();
     };
 
 } // Spinner

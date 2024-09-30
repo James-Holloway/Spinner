@@ -92,16 +92,17 @@ namespace Spinner::Components
 
     void MeshComponent::Update(const std::shared_ptr<Scene> &scene, const Buffer::Pointer &sceneBuffer, uint32_t currentFrame)
     {
-        if (Material != nullptr)
-        {
-            // Update material
-            auto constants = GetMeshConstants();
-            Material->ApplyMaterial(constants);
-            UpdateConstantBuffer(constants);
+        // Cannot render without material
+        if (Material == nullptr)
+            return;
 
-            // Update textures
-            Material->ApplyTextures(FragmentShaderInstance);
-        }
+        // Update material
+        auto constants = GetMeshConstants();
+        Material->ApplyMaterial(constants);
+        UpdateConstantBuffer(constants);
+
+        // Update textures
+        Material->ApplyTextures(FragmentShaderInstance);
 
         // Update lighting (lights + shadows), if applicable
         auto lighting = scene->GetLighting();

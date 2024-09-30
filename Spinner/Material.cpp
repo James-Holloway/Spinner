@@ -10,7 +10,7 @@ namespace Spinner
 {
     Material::Material(std::string materialName, glm::vec4 color, float roughness, float metallic, float emissionStrength) : Name(std::move(materialName)), Color(color), Roughness(roughness), Metallic(metallic), EmissionStrength(emissionStrength)
     {
-        std::fill(DefaultTextureTypes.begin(), DefaultTextureTypes.end(), DefaultTextureType::Black);
+        std::fill(DefaultTextureTypes.begin(), DefaultTextureTypes.end(), DefaultTextureType::White);
     }
 
     Material::Pointer Material::CreateMaterial(const std::string &materialName, glm::vec4 color, float roughness, float metallic, float emissionStrength)
@@ -56,6 +56,9 @@ namespace Spinner
                         break;
                     case DefaultTextureType::Magenta:
                         texture = Texture::GetMagentaTexture();
+                        break;
+                    case DefaultTextureType::BlankNormal:
+                        texture = Texture::GetBlankNormal();
                         break;
                 }
             }
@@ -219,6 +222,9 @@ namespace Spinner
                         break;
                     case DefaultTextureType::Magenta:
                         ImGui::Text("Default Magenta Texture");
+                        break;
+                    case DefaultTextureType::BlankNormal:
+                        ImGui::Text("Default Blank Normal Texture");
                         break;
                 }
             }

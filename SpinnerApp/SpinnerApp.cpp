@@ -1,5 +1,6 @@
 #include "SpinnerApp.hpp"
 #include "Spinner/MeshData/StaticMeshVertex.hpp"
+#include "Spinner/Components/Components.hpp"
 
 using namespace Spinner;
 

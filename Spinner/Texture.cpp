@@ -13,6 +13,7 @@ namespace Spinner
     static Texture::Pointer WhiteTexture;
     static Texture::Pointer TransparentTexture;
     static Texture::Pointer MagentaTexture;
+    static Texture::Pointer BlankNormal;
 
     Texture::Texture(const std::string &textureFilename) : Name(textureFilename)
     {
@@ -96,6 +97,7 @@ namespace Spinner
         WhiteTexture = PixelColor(glm::vec4(1, 1, 1, 1));
         TransparentTexture = PixelColor(glm::vec4(0, 0, 0, 0));
         MagentaTexture = PixelColor(glm::vec4(1, 0, 1, 1));
+        BlankNormal = PixelColor(glm::vec4(0.5f, 0.5f, 1.0f, 1.0f));
     }
 
     void Texture::ReleaseDefaultTextures()
@@ -104,6 +106,7 @@ namespace Spinner
         WhiteTexture.reset();
         TransparentTexture.reset();
         MagentaTexture.reset();
+        BlankNormal.reset();
     }
 
     Texture::Pointer Texture::GetBlackTexture()
@@ -124,6 +127,11 @@ namespace Spinner
     Texture::Pointer Texture::GetMagentaTexture()
     {
         return MagentaTexture;
+    }
+
+    Texture::Pointer Texture::GetBlankNormal()
+    {
+        return BlankNormal;
     }
 
     void Texture::CreateMainImageView()

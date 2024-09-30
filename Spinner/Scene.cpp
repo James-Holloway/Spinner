@@ -290,6 +290,11 @@ namespace Spinner
             {
                 meshComponent->SetMaterial(sceneInfo.Materials.at(meshInformation.MaterialIndex));
             }
+            else
+            {
+                auto material = Material::CreateMaterial("Unnamed Material");
+                meshComponent->SetMaterial(material);
+            }
         }
 
         return sceneObject;
@@ -405,7 +410,9 @@ namespace Spinner
             }
             if (!node.rotation.empty())
             {
-                sceneObject->SetLocalRotation(glm::quat(static_cast<float>(node.rotation[0]), static_cast<float>(node.rotation[1]), static_cast<float>(node.rotation[2]), static_cast<float>(node.rotation[3])));
+                auto rotation = glm::quat(static_cast<float>(node.rotation[3]), static_cast<float>(node.rotation[0]), static_cast<float>(node.rotation[1]), static_cast<float>(node.rotation[2]));
+                auto rotated = glm::quat(rotation.y, rotation.z, -rotation.w, -rotation.x);
+                sceneObject->SetLocalRotation(rotated);
             }
             if (!node.scale.empty())
             {
@@ -425,9 +432,7 @@ namespace Spinner
                     sceneObject->AddChild(child);
                 }
             }
-
-        }
-        catch (const std::exception &ex)
+        } catch (const std::exception &ex)
         {
             std::string modelName = model.scenes.at(model.defaultScene).name;
             sceneInfo.Warnings += "Error while loading GLTF model " + modelName + " at node " + node.name + ": " + ex.what() + '\n';
@@ -621,8 +626,7 @@ namespace Spinner
         }
 
         auto extension = std::filesystem::path(assetPath).extension().string();
-        std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) -> unsigned char
-        { return std::tolower(c); });
+        std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) -> unsigned char { return std::tolower(c); });
 
         tinygltf::TinyGLTF loader;
         tinygltf::Model model;
@@ -748,37 +752,37 @@ namespace Spinner
         int indexID = 0;
 
         GetObjectTree()->Traverse([&](const SceneObject::Pointer &object) -> bool
+            {
+                ImGui::Indent(8);
+                bool isActive = object->IsActive();
+                if (!isActive)
                 {
-                    ImGui::Indent(8);
-                    bool isActive = object->IsActive();
-                    if (!isActive)
-                    {
-                        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                    }
-                    std::string id = object->GetName() + "##" + std::to_string(indexID++);
-                    if (ImGui::RadioButton(id.c_str(), object == selectedObject))
-                    {
-                        if (object != selectedObject)
-                        {
-                            SelectedInHierarchy = object;
-                        }
-                        else
-                        {
-                            SelectedInHierarchy = {}; // deselect if already selected
-                        }
-                    }
-
-                    if (!isActive)
-                    {
-                        ImGui::PopStyleColor();
-                    }
-
-                    return true;
-                },
-                [&](const SceneObject::Pointer &object) -> void
+                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                }
+                std::string id = object->GetName() + "##" + std::to_string(indexID++);
+                if (ImGui::RadioButton(id.c_str(), object == selectedObject))
                 {
-                    ImGui::Unindent(8);
-                });
+                    if (object != selectedObject)
+                    {
+                        SelectedInHierarchy = object;
+                    }
+                    else
+                    {
+                        SelectedInHierarchy = {}; // deselect if already selected
+                    }
+                }
+
+                if (!isActive)
+                {
+                    ImGui::PopStyleColor();
+                }
+
+                return true;
+            },
+            [&](const SceneObject::Pointer &object) -> void
+            {
+                ImGui::Unindent(8);
+            });
     }
 
     void Scene::RenderSelectedProperties()
@@ -791,5 +795,4 @@ namespace Spinner
 
         selectedObject->RenderDebugUI();
     }
-
 } // Spinner

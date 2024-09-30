@@ -22,6 +22,7 @@ namespace Spinner
             White,
             Transparent,
             Magenta,
+            BlankNormal,
         };
 
         explicit Material(std::string materialName, glm::vec4 color = {1, 1, 1, 1}, float roughness = 0.5f, float metallic = 0.0f, float emissionStrength = 0.0f);
@@ -65,7 +66,6 @@ namespace Spinner
     public:
         static Pointer CreateMaterial(const std::string &materialName = "Material", glm::vec4 color = {1, 1, 1, 1}, float roughness = 0.5f, float metallic = 0.0f, float emissionStrength = 0.0f);
     };
-
 } // Spinner
 
 #endif //SPINNER_MATERIAL_HPP
