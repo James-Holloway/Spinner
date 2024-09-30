@@ -3,17 +3,7 @@
 
 #define CUSTOM_MATERIAL_PROPERTY_COUNT 16
 
-layout(set = 0, binding = 0) uniform Scene {
-    mat4 viewProjection;
-    mat4 view;
-    mat4 projection;
-    vec3 cameraPosition;
-    vec2 cameraExtent;
-    float time;
-    float deltaTime;
-};
-
-layout(set = 0, binding = 1) uniform Mesh
+layout(set = 0, binding = 0) uniform Mesh
 {
     mat4 model;
     vec4 materialColor;
@@ -21,8 +11,9 @@ layout(set = 0, binding = 1) uniform Mesh
     float customMaterialProperties[CUSTOM_MATERIAL_PROPERTY_COUNT];
 };
 
-layout (set = 0, binding = 2) uniform sampler2D mainTexture;
+layout(set = 0, binding = 1) uniform sampler2D mainTexture;
 
+#include "scene.glsl"
 #include "lighting.glsl"
 
 layout (location = 0) in vec3 inNormal;

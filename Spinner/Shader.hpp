@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan.hpp>
 #include <memory>
+
+#include "CommandBuffer.hpp"
 #include "Object.hpp"
 #include "DescriptorPool.hpp"
 #include "DescriptorSetLayout.hpp"
@@ -11,13 +13,9 @@
 namespace Spinner
 {
     class Graphics;
-
     class CommandBuffer;
-
-    class ShaderInstance;
-
+    class ShaderGroup;
     class Buffer;
-
     class Texture;
 
     struct ShaderCreateInfo
@@ -26,6 +24,7 @@ namespace Spinner
         vk::ShaderStageFlagBits ShaderStage;
         vk::ShaderStageFlags NextStage;
         std::vector<DescriptorSetLayout::Pointer> DescriptorSetLayouts;
+        DescriptorSetLayout::Pointer SceneDescriptorSetLayout;
         DescriptorSetLayout::Pointer LightingDescriptorSetLayout;
     };
 
@@ -33,9 +32,7 @@ namespace Spinner
     class Shader
     {
         friend class Graphics;
-
-        friend class ShaderInstance;
-
+        friend class ShaderGroup;
         friend class CommandBuffer;
 
     public:
@@ -54,9 +51,12 @@ namespace Spinner
         [[nodiscard]] std::vector<vk::PushConstantRange> GetPushConstantRanges(uint32_t index) const;
         [[nodiscard]] vk::DescriptorSetLayout GetDescriptorSetLayout(uint32_t index) const;
         [[nodiscard]] std::vector<vk::DescriptorSetLayout> GetDescriptorSetLayouts() const;
+        [[nodiscard]] vk::DescriptorSetLayout GetSceneDescriptorSetLayout() const;
         [[nodiscard]] vk::DescriptorSetLayout GetLightingDescriptorSetLayout() const;
+        [[nodiscard]] uint32_t GetSceneDescriptorSetIndex() const;
         [[nodiscard]] uint32_t GetLightingDescriptorSetIndex() const;
         [[nodiscard]] vk::PipelineLayout GetPipelineLayout() const;
+        [[nodiscard]] std::optional<vk::DescriptorType> GetDescriptorTypeOfBinding(uint32_t binding, uint32_t set = 0) const;
 
         constexpr static const uint32_t InvalidBindingIndex = 0xFFFF'FFFF;
 
@@ -69,65 +69,42 @@ namespace Spinner
         vk::ShaderStageFlags NextStage;
         vk::ShaderEXT VkShader;
         std::vector<DescriptorSetLayout::Pointer> DescriptorSetLayouts;
+        DescriptorSetLayout::Pointer SceneDescriptorSetLayout;
         DescriptorSetLayout::Pointer LightingDescriptorSetLayout;
         vk::PipelineLayout VkPipelineLayout;
+        uint32_t SceneDescriptorSetIndex = InvalidBindingIndex;
         uint32_t LightingDescriptorSetIndex = InvalidBindingIndex;
 
     public:
+        // You probably want to create a ShaderGroup instead of an unlinked shader
         static Pointer CreateShader(const ShaderCreateInfo &createInfo);
-        [[nodiscard]] static std::vector<Pointer> CreateLinkedShaders(const std::vector<ShaderCreateInfo> &createInfos);
     };
 
-    struct ShaderInstanceCreateInfo
-    {
-        Shader::Pointer Shader;
-        DescriptorPool::Pointer DescriptorPool;
-    };
-
-    class ShaderInstance
+    class ShaderGroup final
     {
         friend class Graphics;
-
         friend class Shader;
 
-        friend class CommandBuffer;
-
     public:
-        using Pointer = std::shared_ptr<ShaderInstance>;
+        using Pointer = std::shared_ptr<ShaderGroup>;
 
-        explicit ShaderInstance(const ShaderInstanceCreateInfo &createInfo);
-        ShaderInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool);
-        ~ShaderInstance();
-        ShaderInstance(const ShaderInstance &other);
-        ShaderInstance &operator=(const ShaderInstance &other);
+        ShaderGroup() = default;
+        ~ShaderGroup() = default;
 
     protected:
-        void CreateDescriptors();
+        std::vector<Shader::Pointer> Shaders;
 
     public:
-        [[nodiscard]] vk::ShaderStageFlagBits GetShaderStage() const;
-        [[nodiscard]] vk::ShaderStageFlags GetNextStage() const;
-        [[nodiscard]] Spinner::Shader::Pointer GetShader() const;
-        [[nodiscard]] Spinner::DescriptorPool::Pointer GetDescriptorPool() const;
+        void BindShaders(const std::shared_ptr<CommandBuffer> &commandBuffer) const;
 
-        [[nodiscard]] std::optional<vk::DescriptorType> GetDescriptorTypeOfBinding(uint32_t binding, uint32_t set = 0) const;
-        [[nodiscard]] std::vector<vk::DescriptorSet> GetDescriptorSets(uint32_t currentFrame) const;
-        [[nodiscard]] vk::DescriptorSet GetDescriptorSet(uint32_t currentFrame, uint32_t set = 0) const;
-        void UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer, uint32_t set = 0) const;
-        void UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal, uint32_t set = 0) const;
-        void UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal, uint32_t set = 0) const;
-
-    protected:
-        Spinner::Shader::Pointer Shader;
-        Spinner::DescriptorPool::Pointer DescriptorPool;
-        std::array<std::vector<vk::DescriptorSet>, MAX_FRAMES_IN_FLIGHT> VkDescriptorSets;
+        [[nodiscard]] bool HasShaderStage(vk::ShaderStageFlagBits shaderStage) const;
+        [[nodiscard]] Shader::Pointer GetShader(vk::ShaderStageFlagBits shaderStage) const;
 
     public:
-        static Pointer CreateInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool);
+        [[nodiscard]] static Spinner::ShaderGroup::Pointer CreateShaderGroup(const std::vector<ShaderCreateInfo> &createInfos);
     };
 
     std::string GetShaderFileName(const std::string &shaderName, vk::ShaderStageFlagBits stage);
-
 } // Spinner
 
 #endif //SPINNER_SHADER_HPP

@@ -66,4 +66,9 @@ namespace Spinner
     {
         Graphics::GetDevice().freeDescriptorSets(VkDescriptorPool, sets);
     }
+
+    void DescriptorPool::ResetPool() const
+    {
+        Graphics::GetDevice().resetDescriptorPool(VkDescriptorPool);
+    }
 } // Spinner

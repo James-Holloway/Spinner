@@ -7,7 +7,6 @@
 
 namespace Spinner
 {
-
     Shader::Shader(const ShaderCreateInfo &createInfo)
     {
         ShaderStage = createInfo.ShaderStage;
@@ -22,10 +21,17 @@ namespace Spinner
 
         // Pipeline layout
         auto pushConstants = GetPushConstantRanges(0); // WARNING: Only takes push constants from the first descriptor set layout
+        if (createInfo.SceneDescriptorSetLayout != nullptr)
+        {
+            SceneDescriptorSetIndex = static_cast<uint32_t>(DescriptorSetLayouts.size());
+            DescriptorSetLayouts.push_back(createInfo.SceneDescriptorSetLayout);
+            SceneDescriptorSetLayout = createInfo.SceneDescriptorSetLayout;
+        }
         if (createInfo.LightingDescriptorSetLayout != nullptr)
         {
             LightingDescriptorSetIndex = static_cast<uint32_t>(DescriptorSetLayouts.size());
             DescriptorSetLayouts.push_back(createInfo.LightingDescriptorSetLayout);
+            LightingDescriptorSetLayout = createInfo.LightingDescriptorSetLayout;
         }
 
         std::vector<vk::DescriptorSetLayout> layouts = GetDescriptorSetLayouts();
@@ -50,6 +56,7 @@ namespace Spinner
             VkPipelineLayout = nullptr;
         }
 
+        SceneDescriptorSetLayout.reset();
         LightingDescriptorSetLayout.reset();
         DescriptorSetLayouts.clear();
     }
@@ -86,7 +93,182 @@ namespace Spinner
         return shader;
     }
 
-    std::vector<Shader::Pointer> Shader::CreateLinkedShaders(const std::vector<ShaderCreateInfo> &createInfos)
+    std::string Shader::GetShaderName() const
+    {
+        return ShaderName;
+    }
+
+    vk::ShaderStageFlagBits Shader::GetShaderStage() const
+    {
+        return ShaderStage;
+    }
+
+    vk::ShaderStageFlags Shader::GetNextStage() const
+    {
+        return NextStage;
+    }
+
+    vk::ShaderEXT Shader::GetVkShader() const
+    {
+        return VkShader;
+    }
+
+    std::vector<vk::DescriptorSetLayoutBinding> Shader::GetDescriptorSetLayoutBindings(uint32_t index) const
+    {
+        return DescriptorSetLayouts.at(index)->GetDescriptorSetLayoutBindings();
+    }
+
+    std::vector<vk::PushConstantRange> Shader::GetPushConstantRanges(uint32_t index) const
+    {
+        return DescriptorSetLayouts.at(index)->GetPushConstantRanges();
+    }
+
+    vk::DescriptorSetLayout Shader::GetDescriptorSetLayout(uint32_t index) const
+    {
+        return DescriptorSetLayouts.at(index)->GetDescriptorSetLayout();
+    }
+
+    std::vector<vk::DescriptorSetLayout> Shader::GetDescriptorSetLayouts() const
+    {
+        std::vector<vk::DescriptorSetLayout> layouts;
+        layouts.reserve(DescriptorSetLayouts.size());
+        for (auto &setLayout : DescriptorSetLayouts)
+        {
+            layouts.push_back(setLayout->GetDescriptorSetLayout());
+        }
+        return layouts;
+    }
+
+    vk::DescriptorSetLayout Shader::GetSceneDescriptorSetLayout() const
+    {
+        if (SceneDescriptorSetLayout == nullptr)
+        {
+            return nullptr;
+        }
+        return SceneDescriptorSetLayout->GetDescriptorSetLayout();
+    }
+
+    vk::DescriptorSetLayout Shader::GetLightingDescriptorSetLayout() const
+    {
+        if (LightingDescriptorSetLayout == nullptr)
+        {
+            return nullptr;
+        }
+        return LightingDescriptorSetLayout->GetDescriptorSetLayout();
+    }
+
+    vk::PipelineLayout Shader::GetPipelineLayout() const
+    {
+        return VkPipelineLayout;
+    }
+
+    std::optional<vk::DescriptorType> Shader::GetDescriptorTypeOfBinding(uint32_t binding, uint32_t set) const
+    {
+        auto layoutBindings = GetDescriptorSetLayoutBindings(set);
+
+        for (const vk::DescriptorSetLayoutBinding &layoutBinding : layoutBindings)
+        {
+            if (layoutBinding.binding == binding)
+            {
+                return {layoutBinding.descriptorType};
+            }
+        }
+
+        return {};
+    }
+
+    uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, vk::DescriptorType type)
+    {
+        size_t index = 0;
+        auto bindings = GetDescriptorSetLayoutBindings(set);
+        for (auto &binding : bindings)
+        {
+            bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
+            bool sameType = (binding.descriptorType == type);
+            if (sameStage && sameType)
+            {
+                if (index == indexOfType)
+                {
+                    return binding.binding;
+                }
+                index++;
+            }
+        }
+
+        return InvalidBindingIndex;
+    }
+
+    uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, const std::vector<vk::DescriptorType> &types)
+    {
+        size_t index = 0;
+        auto bindings = GetDescriptorSetLayoutBindings(set);
+        for (auto &binding : bindings)
+        {
+            bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
+            bool sameType = Contains(types, binding.descriptorType);
+            if (sameStage && sameType)
+            {
+                if (index == indexOfType)
+                {
+                    return binding.binding;
+                }
+                index++;
+            }
+        }
+
+        return InvalidBindingIndex;
+    }
+
+    uint32_t Shader::GetSceneDescriptorSetIndex() const
+    {
+        return SceneDescriptorSetIndex;
+    }
+
+    uint32_t Shader::GetLightingDescriptorSetIndex() const
+    {
+        return LightingDescriptorSetIndex;
+    }
+
+    void ShaderGroup::BindShaders(const CommandBuffer::Pointer &commandBuffer) const
+    {
+        // Unbind unused shaders
+        if (!HasShaderStage(vk::ShaderStageFlagBits::eGeometry))
+        {
+            commandBuffer->UnbindShaderStage(vk::ShaderStageFlagBits::eGeometry);
+        }
+
+        for (auto &shader : Shaders)
+        {
+            commandBuffer->TrackObject(shader);
+            commandBuffer->BindShader(shader);
+        }
+    }
+
+    bool ShaderGroup::HasShaderStage(const vk::ShaderStageFlagBits shaderStage) const
+    {
+        for (auto &shader : Shaders)
+        {
+            if (shader->ShaderStage == shaderStage)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    Shader::Pointer ShaderGroup::GetShader(const vk::ShaderStageFlagBits shaderStage) const
+    {
+        for (auto &shader : Shaders)
+        {
+            if (shader->ShaderStage == shaderStage)
+            {
+                return shader;
+            }
+        }
+        return nullptr;
+    }
+
+    ShaderGroup::Pointer ShaderGroup::CreateShaderGroup(const std::vector<ShaderCreateInfo> &createInfos)
     {
         auto &device = Graphics::GetDevice();
 
@@ -149,298 +331,10 @@ namespace Spinner
             shaders[i]->VkShader = vkShaders.value[i];
         }
 
-        return shaders;
-    }
+        auto shaderGroup = std::make_shared<ShaderGroup>();
+        shaderGroup->Shaders = shaders;
 
-    std::string Shader::GetShaderName() const
-    {
-        return ShaderName;
-    }
-
-    vk::ShaderStageFlagBits Shader::GetShaderStage() const
-    {
-        return ShaderStage;
-    }
-
-    vk::ShaderStageFlags Shader::GetNextStage() const
-    {
-        return NextStage;
-    }
-
-    vk::ShaderEXT Shader::GetVkShader() const
-    {
-        return VkShader;
-    }
-
-    std::vector<vk::DescriptorSetLayoutBinding> Shader::GetDescriptorSetLayoutBindings(uint32_t index) const
-    {
-        return DescriptorSetLayouts.at(index)->GetDescriptorSetLayoutBindings();
-    }
-
-    std::vector<vk::PushConstantRange> Shader::GetPushConstantRanges(uint32_t index) const
-    {
-        return DescriptorSetLayouts.at(index)->GetPushConstantRanges();
-    }
-
-    vk::DescriptorSetLayout Shader::GetDescriptorSetLayout(uint32_t index) const
-    {
-        return DescriptorSetLayouts.at(index)->GetDescriptorSetLayout();
-    }
-
-    std::vector<vk::DescriptorSetLayout> Shader::GetDescriptorSetLayouts() const
-    {
-        std::vector<vk::DescriptorSetLayout> layouts;
-        layouts.reserve(DescriptorSetLayouts.size());
-        for (auto &setLayout : DescriptorSetLayouts)
-        {
-            layouts.push_back(setLayout->GetDescriptorSetLayout());
-        }
-        return layouts;
-    }
-
-    vk::DescriptorSetLayout Shader::GetLightingDescriptorSetLayout() const
-    {
-        if (LightingDescriptorSetLayout == nullptr)
-        {
-            return nullptr;
-        }
-        return LightingDescriptorSetLayout->GetDescriptorSetLayout();
-    }
-
-    vk::PipelineLayout Shader::GetPipelineLayout() const
-    {
-        return VkPipelineLayout;
-    }
-
-    uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, vk::DescriptorType type)
-    {
-        size_t index = 0;
-        auto bindings = GetDescriptorSetLayoutBindings(set);
-        for (auto &binding : bindings)
-        {
-            bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
-            bool sameType = (binding.descriptorType == type);
-            if (sameStage && sameType)
-            {
-                if (index == indexOfType)
-                {
-                    return binding.binding;
-                }
-                index++;
-            }
-        }
-
-        return InvalidBindingIndex;
-    }
-
-    uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, const std::vector<vk::DescriptorType> &types)
-    {
-        size_t index = 0;
-        auto bindings = GetDescriptorSetLayoutBindings(set);
-        for (auto &binding : bindings)
-        {
-            bool sameStage = static_cast<vk::ShaderStageFlags::MaskType>(binding.stageFlags & ShaderStage) != 0;
-            bool sameType = Contains(types, binding.descriptorType);
-            if (sameStage && sameType)
-            {
-                if (index == indexOfType)
-                {
-                    return binding.binding;
-                }
-                index++;
-            }
-        }
-
-        return InvalidBindingIndex;
-    }
-
-    uint32_t Shader::GetLightingDescriptorSetIndex() const
-    {
-        return LightingDescriptorSetIndex;
-    }
-
-    ShaderInstance::ShaderInstance(const ShaderInstanceCreateInfo &createInfo)
-    {
-        if (createInfo.Shader == nullptr || createInfo.Shader->VkShader == nullptr)
-        {
-            throw std::runtime_error("Cannot create a ShaderInstance from a CreateInfo with an invalid shader");
-        }
-
-        Shader = createInfo.Shader;
-        DescriptorPool = createInfo.DescriptorPool;
-
-        CreateDescriptors();
-    }
-
-    ShaderInstance::ShaderInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool)
-    {
-        if (shader == nullptr || shader->VkShader == nullptr)
-        {
-            throw std::runtime_error("Cannot create a ShaderInstance with an invalid shader");
-        }
-
-        Shader = shader;
-        DescriptorPool = descriptorPool;
-
-        CreateDescriptors();
-    }
-
-    ShaderInstance::~ShaderInstance()
-    {
-        for (auto &sets : VkDescriptorSets)
-        {
-            if (!sets.empty())
-            {
-                DescriptorPool->FreeDescriptorSets(sets);
-            }
-            sets.clear();
-        }
-    }
-
-    ShaderInstance::ShaderInstance(const ShaderInstance &other)
-    {
-        if (other.Shader == nullptr || other.Shader->VkShader == nullptr)
-        {
-            throw std::runtime_error("Cannot create a ShaderInstance from another ShaderInstance with an invalid Shader");
-        }
-
-        Shader = other.Shader;
-        DescriptorPool = other.DescriptorPool;
-
-        CreateDescriptors();
-    }
-
-    ShaderInstance &ShaderInstance::operator=(const ShaderInstance &other)
-    {
-        if (&other != this)
-        {
-            this->Shader = other.Shader;
-            DescriptorPool = other.DescriptorPool;
-
-            CreateDescriptors();
-        }
-        return *this;
-    }
-
-    void ShaderInstance::CreateDescriptors()
-    {
-        // Descriptor Sets
-        for (auto &sets : VkDescriptorSets)
-        {
-            sets = DescriptorPool->AllocateDescriptorSets(Shader);
-        }
-    }
-
-    vk::ShaderStageFlagBits ShaderInstance::GetShaderStage() const
-    {
-        return Shader->ShaderStage;
-    }
-
-    vk::ShaderStageFlags ShaderInstance::GetNextStage() const
-    {
-        return Shader->NextStage;
-    }
-
-    Spinner::Shader::Pointer ShaderInstance::GetShader() const
-    {
-        return Shader;
-    }
-
-    Spinner::DescriptorPool::Pointer ShaderInstance::GetDescriptorPool() const
-    {
-        return DescriptorPool;
-    }
-
-    std::vector<vk::DescriptorSet> ShaderInstance::GetDescriptorSets(uint32_t currentFrame) const
-    {
-        return VkDescriptorSets.at(currentFrame);
-    }
-
-    vk::DescriptorSet ShaderInstance::GetDescriptorSet(uint32_t currentFrame, uint32_t set) const
-    {
-        return VkDescriptorSets.at(currentFrame).at(set);
-    }
-
-    std::optional<vk::DescriptorType> ShaderInstance::GetDescriptorTypeOfBinding(uint32_t binding, uint32_t set) const
-    {
-        auto layoutBindings = Shader->GetDescriptorSetLayoutBindings(set);
-
-        for (const vk::DescriptorSetLayoutBinding &layoutBinding : layoutBindings)
-        {
-            if (layoutBinding.binding == binding)
-            {
-                return {layoutBinding.descriptorType};
-            }
-        }
-
-        return {};
-    }
-
-    void ShaderInstance::UpdateDescriptorBuffer(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Buffer> &buffer, uint32_t set) const
-    {
-        auto descriptorType = GetDescriptorTypeOfBinding(binding);
-        if (!descriptorType.has_value())
-        {
-            throw std::runtime_error("Cannot get binding type from Shader's descriptor set layout bindings, binding #" + std::to_string(binding));
-        }
-
-        auto sets = GetDescriptorSets(currentFrame);
-
-        vk::DescriptorBufferInfo bufferInfo;
-        bufferInfo.buffer = buffer->VkBuffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = vk::WholeSize;
-
-        vk::WriteDescriptorSet writeDescriptorSet;
-        writeDescriptorSet.dstSet = sets.at(set); // WARNING: only one set is bound currently (check CreateDescriptors)
-        writeDescriptorSet.dstBinding = binding;
-        writeDescriptorSet.dstArrayElement = 0;
-        writeDescriptorSet.descriptorType = descriptorType.value();
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.pBufferInfo = &bufferInfo;
-
-        Graphics::GetDevice().updateDescriptorSets(writeDescriptorSet, nullptr);
-    }
-
-    ShaderInstance::Pointer ShaderInstance::CreateInstance(const Shader::Pointer &shader, const DescriptorPool::Pointer &descriptorPool)
-    {
-        return std::make_shared<ShaderInstance>(shader, descriptorPool);
-    }
-
-    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, const std::shared_ptr<Texture> &texture, vk::ImageLayout imageLayout, uint32_t set) const
-    {
-        assert(texture != nullptr);
-        assert(texture->GetImage() != nullptr);
-        assert(texture->GetImage()->GetMainImageView() != nullptr);
-        assert(texture->GetSampler() != nullptr);
-
-        UpdateDescriptorImage(currentFrame, binding, texture->GetImage()->GetMainImageView(), texture->GetSampler()->GetSampler(), imageLayout, set);
-    }
-
-    void ShaderInstance::UpdateDescriptorImage(uint32_t currentFrame, uint32_t binding, vk::ImageView imageView, vk::Sampler sampler, vk::ImageLayout imageLayout, uint32_t set) const
-    {
-        auto descriptorType = GetDescriptorTypeOfBinding(binding);
-        if (!descriptorType.has_value())
-        {
-            throw std::runtime_error("Cannot get binding type from Shader's descriptor set layout bindings, binding #" + std::to_string(binding));
-        }
-
-        auto sets = GetDescriptorSets(currentFrame);
-
-        vk::DescriptorImageInfo imageInfo;
-        imageInfo.imageView = imageView;
-        imageInfo.imageLayout = imageLayout;
-        imageInfo.sampler = sampler;
-
-        vk::WriteDescriptorSet writeDescriptorSet;
-        writeDescriptorSet.dstSet = sets.at(set); // WARNING: only one set is bound currently (check CreateDescriptors)
-        writeDescriptorSet.dstBinding = binding;
-        writeDescriptorSet.dstArrayElement = 0;
-        writeDescriptorSet.descriptorType = descriptorType.value();
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.pImageInfo = &imageInfo;
-
-        Graphics::GetDevice().updateDescriptorSets(writeDescriptorSet, nullptr);
+        return shaderGroup;
     }
 
     std::string GetShaderFileName(const std::string &shaderName, vk::ShaderStageFlagBits stage)

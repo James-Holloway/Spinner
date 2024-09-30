@@ -6,6 +6,7 @@
 #include "MeshBuffer.hpp"
 #include "Graphics.hpp"
 #include "Image.hpp"
+#include "Shader.hpp"
 
 namespace Spinner
 {
@@ -139,15 +140,9 @@ namespace Spinner
         VkCommandBuffer.endRendering();
     }
 
-    void CommandBuffer::BindShader(const Shader::Pointer &shader)
+    void CommandBuffer::BindShader(const std::shared_ptr<Shader> &shader)
     {
         VkCommandBuffer.bindShadersEXT(shader->ShaderStage, shader->VkShader, VulkanInstance::GetDispatchLoader());
-    }
-
-    void CommandBuffer::BindShaderInstance(const ShaderInstance::Pointer &shaderInstance)
-    {
-        BindShader(shaderInstance->Shader);
-        BindShaderInstanceDescriptors(shaderInstance, vk::PipelineBindPoint::eGraphics);
     }
 
     void CommandBuffer::UnbindShaderStage(vk::ShaderStageFlagBits stage)
@@ -191,12 +186,6 @@ namespace Spinner
     void CommandBuffer::BindDescriptors(vk::PipelineLayout layout, uint32_t firstSet, const vk::ArrayProxy<const vk::DescriptorSet> &sets, vk::PipelineBindPoint bindPoint)
     {
         VkCommandBuffer.bindDescriptorSets(bindPoint, layout, firstSet, sets, nullptr);
-    }
-
-    void CommandBuffer::BindShaderInstanceDescriptors(const ShaderInstance::Pointer &shaderInstance, vk::PipelineBindPoint bindPoint)
-    {
-        TrackObject(shaderInstance);
-        BindDescriptors(shaderInstance->GetShader()->GetPipelineLayout(), 0, shaderInstance->GetDescriptorSets(Graphics::GetCurrentFrame()), bindPoint);
     }
 
     void CommandBuffer::InsertImageMemoryBarrier(vk::Image image, vk::AccessFlags2 srcAccessMask, vk::AccessFlags2 dstAccessMask, vk::ImageLayout oldImageLayout, vk::ImageLayout newImageLayout, vk::PipelineStageFlags2 srcStageMask, vk::PipelineStageFlags2 dstStageMask, vk::ImageSubresourceRange subresourceRange)
@@ -340,6 +329,4 @@ namespace Spinner
         TransitionImageLayout(image->GetImage(), oldLayout, newLayout, aspectFlags, srcStage, dstStage, subresourceRange);
         image->CurrentImageLayout = newLayout;
     }
-
-
 } // Spinner

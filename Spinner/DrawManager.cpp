@@ -10,11 +10,19 @@ namespace Spinner
     DrawManager::DrawManager()
     {
         SceneBuffer = Buffer::CreateBuffer(sizeof(SceneConstants), vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst, vma::MemoryUsage::eCpuToGpu, 0, true);
+        DescriptorPool = Spinner::DescriptorPool::CreateDefault();
     }
 
     DrawManager::~DrawManager()
     {
         SceneBuffer.reset();
+    }
+
+    Spinner::DrawCommand::Pointer DrawManager::CreateDrawCommand(const Spinner::ShaderGroup::Pointer &shaderGroup)
+    {
+        auto drawCommand = std::make_shared<DrawCommand>(shaderGroup, DescriptorPool);
+        DrawCommands.push_back(drawCommand);
+        return drawCommand;
     }
 
     void DrawManager::SetScene(const std::shared_ptr<Spinner::Scene> &scene)
@@ -24,6 +32,9 @@ namespace Spinner
 
     void DrawManager::Update(const Components::ComponentPtr<Components::CameraComponent> &cameraComponent)
     {
+        DescriptorPool->ResetPool();
+        DrawCommands.clear();
+
         auto scene = Scene.lock();
         if (scene == nullptr || !scene->IsActive())
         {
@@ -38,9 +49,9 @@ namespace Spinner
         cameraComponent->UpdateSceneConstants(LocalSceneBuffer);
         SceneBuffer->Write<SceneConstants>(LocalSceneBuffer);
 
-        glm::vec3 viewerPosition = LocalSceneBuffer.CameraPosition;
-
         std::vector<Components::LightComponent *> activeLightComponents;
+
+        const auto lighting = scene->GetLighting();
 
         // Update mesh constants
         auto currentFrame = Graphics::GetCurrentFrame();
@@ -49,13 +60,20 @@ namespace Spinner
             auto meshComponents = sceneObject->GetComponentRawPointers<Components::MeshComponent>();
             for (auto &meshComponent : meshComponents)
             {
+                if (!meshComponent->GetActive())
+                    continue;
+
                 // Update constant buffer with position
                 auto meshConstants = meshComponent->GetMeshConstants();
                 meshConstants.Model = sceneObject->GetWorldMatrix();
                 meshComponent->UpdateConstantBuffer(meshConstants);
 
-                // Potentially update descriptor sets
-                meshComponent->Update(scene, SceneBuffer, currentFrame);
+                // Create draw command
+                auto drawCommand = CreateDrawCommand(meshComponent->GetShaderGroup());
+                drawCommand->UseSceneBuffer(SceneBuffer);
+                drawCommand->UseLighting(lighting);
+
+                meshComponent->Update(drawCommand);
             }
 
             // Get active light components
@@ -71,9 +89,10 @@ namespace Spinner
             return true;
         });
 
-        const auto lighting = scene->GetLighting();
         if (lighting != nullptr)
         {
+            const glm::vec3 viewerPosition = LocalSceneBuffer.CameraPosition;
+
             lighting->UpdateLights(viewerPosition, activeLightComponents);
         }
     }
@@ -86,30 +105,9 @@ namespace Spinner
             return;
         }
 
-        std::map<std::string, std::vector<Components::MeshComponent *>> toDrawOpaque;
-        scene->GetObjectTree()->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
+        for (const auto &drawCommand : DrawCommands)
         {
-            auto meshComponents = sceneObject->GetComponentRawPointers<Components::MeshComponent>();
-            for (auto &meshComponent : meshComponents)
-            {
-                auto shaderName = meshComponent->GetFragmentShaderInstance()->GetShader()->GetShaderName();
-                toDrawOpaque[shaderName].push_back(meshComponent);
-            }
-
-            return true;
-        });
-
-        // Opaque pass
-        Shader::Pointer prevFragShader = nullptr;
-        for (const auto &[shaderName, meshComponents] : toDrawOpaque)
-        {
-            if (meshComponents.empty())
-                continue;
-
-            for (auto &meshComponent : meshComponents)
-            {
-                meshComponent->Draw(commandBuffer);
-            }
+            drawCommand->DrawMesh(commandBuffer);
         }
 
         // TODO transparent pass

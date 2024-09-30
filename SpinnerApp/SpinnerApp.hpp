@@ -17,7 +17,7 @@ protected:
     Spinner::Lighting::Pointer Lighting;
     Spinner::Components::ComponentPtr<Spinner::Components::CameraComponent> Camera;
 
-    Spinner::DrawManager::Pointer DrawManager;
+    std::array<Spinner::DrawManager::Pointer, Spinner::MAX_FRAMES_IN_FLIGHT> DrawManagers;
 
     Spinner::Image::Pointer DepthImage;
     bool ViewDebugUI = true;

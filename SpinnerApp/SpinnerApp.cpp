@@ -26,8 +26,11 @@ void SpinnerApp::AppInit()
     Scene = std::make_shared<Spinner::Scene>("Main Scene");
 
     // Draw Manager
-    DrawManager = std::make_shared<Spinner::DrawManager>();
-    DrawManager->SetScene(Scene);
+    for (auto &drawManager : DrawManagers)
+    {
+        drawManager = std::make_shared<Spinner::DrawManager>();
+        drawManager->SetScene(Scene);
+    }
 
     MeshData::StaticMeshVertex::CreateShaders();
 
@@ -107,7 +110,7 @@ void SpinnerApp::AppRender(Spinner::CommandBuffer::Pointer &commandBuffer, uint3
 
         commandBuffer->BeginRendering(renderingInfo, Graphics::GetSwapchainExtent());
 
-        DrawManager->Render(commandBuffer);
+        DrawManagers[currentFrame]->Render(commandBuffer);
 
         commandBuffer->EndRendering();
     }
@@ -142,6 +145,11 @@ void SpinnerApp::AppRender(Spinner::CommandBuffer::Pointer &commandBuffer, uint3
 
 void SpinnerApp::AppCleanup()
 {
+    for (auto &drawManager : DrawManagers)
+    {
+        drawManager.reset();
+    }
+
     Scene.reset();
     ImGuiInstance.reset();
     DepthImage.reset();
@@ -153,7 +161,7 @@ void SpinnerApp::AppCleanup()
 
 void SpinnerApp::AppUpdate()
 {
-    DrawManager->Update(Camera);
+    DrawManagers[Graphics::GetCurrentFrame()]->Update(Camera);
 
     auto input = Graphics::GetInput();
     if (input->GetKeyPressed(Key::F3))

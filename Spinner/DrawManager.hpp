@@ -1,7 +1,8 @@
-#ifndef DRAWMANAGER_HPP
-#define DRAWMANAGER_HPP
+#ifndef SPINNER_DRAWMANAGER_HPP
+#define SPINNER_DRAWMANAGER_HPP
 
 #include "SceneObject.hpp"
+#include "DrawCommand.hpp"
 #include "Components/CameraComponent.hpp"
 #include "Components/MeshComponent.hpp"
 
@@ -18,8 +19,14 @@ namespace Spinner
     protected:
         std::weak_ptr<Spinner::Scene> Scene;
 
+        Spinner::DescriptorPool::Pointer DescriptorPool;
         Buffer::Pointer SceneBuffer;
         SceneConstants LocalSceneBuffer{};
+
+        std::vector<Spinner::DrawCommand::Pointer> DrawCommands;
+
+    protected:
+        Spinner::DrawCommand::Pointer CreateDrawCommand(const Spinner::ShaderGroup::Pointer &shaderGroup);
 
     public:
         void SetScene(const std::shared_ptr<Spinner::Scene> &scene);
@@ -29,4 +36,4 @@ namespace Spinner
 }
 
 
-#endif //DRAWMANAGER_HPP
+#endif

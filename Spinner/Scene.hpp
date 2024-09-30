@@ -18,6 +18,8 @@ namespace Spinner
     public:
         using Pointer = std::shared_ptr<Scene>;
 
+        static constexpr uint32_t SceneUniformBufferBindingIndex = 0;
+
         explicit Scene(std::string name);
         ~Scene() override = default;
 
@@ -49,6 +51,8 @@ namespace Spinner
     public:
         static SceneObject::Pointer LoadModel(const std::string &modelFilename);
         [[nodiscard]] static std::shared_ptr<Spinner::Lighting> GetGlobalLighting();
+
+        static std::vector<vk::DescriptorSetLayoutBinding> GetDescriptorSetLayoutBindings();
     };
 } // Spinner
 

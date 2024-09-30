@@ -3,6 +3,7 @@
 #include <utility>
 #include "Shader.hpp"
 #include "Graphics.hpp"
+#include "DrawCommand.hpp"
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -28,13 +29,13 @@ namespace Spinner
         }
     }
 
-    void Material::ApplyTextures(std::shared_ptr<ShaderInstance> &shaderInstance)
+    void Material::ApplyTextures(const DrawCommand *drawCommand)
     {
-        auto shader = shaderInstance->GetShader();
+        const auto shader = drawCommand->GetShader(vk::ShaderStageFlagBits::eFragment);
         for (uint32_t textureIndex = 0; textureIndex < MaxBoundTextures; textureIndex++)
         {
             auto &texture = Textures.at(textureIndex);
-            uint32_t binding = shader->GetBindingFromIndex(0u, textureIndex, vk::DescriptorType::eCombinedImageSampler);
+            const uint32_t binding = shader->GetBindingFromIndex(0u, textureIndex, vk::DescriptorType::eCombinedImageSampler);
             if (binding == Shader::InvalidBindingIndex)
             {
                 // Return early if the binding could not be found from the index and type
@@ -63,7 +64,7 @@ namespace Spinner
                 }
             }
 
-            shaderInstance->UpdateDescriptorImage(Graphics::GetCurrentFrame(), binding, texture, vk::ImageLayout::eShaderReadOnlyOptimal);
+            drawCommand->UpdateDescriptorImage(binding, texture, vk::ImageLayout::eShaderReadOnlyOptimal);
         }
     }
 

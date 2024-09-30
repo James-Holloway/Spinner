@@ -12,10 +12,9 @@
 namespace Spinner
 {
     class CommandBuffer;
-
     class Scene;
-
     class Lighting;
+    class DrawCommand;
 
     namespace Components
     {
@@ -27,36 +26,26 @@ namespace Spinner
             MeshComponent(const std::weak_ptr<Spinner::SceneObject> &sceneObject, int64_t componentIndex);
 
         protected:
-            Spinner::ShaderInstance::Pointer VertexShaderInstance;
-            Spinner::ShaderInstance::Pointer FragmentShaderInstance;
+            Spinner::ShaderGroup::Pointer ShaderGroup;
             Spinner::MeshBuffer::Pointer MeshBuffer;
             Spinner::Material::Pointer Material = nullptr;
             Spinner::Buffer::Pointer ConstantBuffer;
             ConstantBufferType LocalConstantBuffer{};
-            std::bitset<MAX_FRAMES_IN_FLIGHT> ConstantBindingsDirty;
-
-        protected:
-            void SetConstantBindingsDirty();
 
         public:
-            Spinner::ShaderInstance::Pointer GetVertexShaderInstance();
-            Spinner::ShaderInstance::Pointer GetFragmentShaderInstance();
-            Spinner::MeshBuffer::Pointer GetMeshBuffer();
+            [[nodiscard]] Spinner::ShaderGroup::Pointer GetShaderGroup() const;
+            void SetShaderGroup(const Spinner::ShaderGroup::Pointer &shaderGroup);
 
-            void SetVertexShaderInstance(Spinner::ShaderInstance::Pointer newShaderInstance);
-            void SetFragmentShaderInstance(Spinner::ShaderInstance::Pointer newShaderInstance);
+            Spinner::MeshBuffer::Pointer GetMeshBuffer();
             void SetMeshBuffer(Spinner::MeshBuffer::Pointer newMeshBuffer);
 
             [[nodiscard]] Spinner::Material::Pointer GetMaterial();
             void SetMaterial(const Spinner::Material::Pointer &material);
 
-            void Update(const std::shared_ptr<Scene> &scene, const Buffer::Pointer &sceneBuffer, uint32_t currentFrame);
-            void Draw(const std::shared_ptr<CommandBuffer> &commandBuffer);
-
-            void PopulateFromShaders(const Spinner::Shader::Pointer &vertexShader, const Spinner::Shader::Pointer &fragmentShader, const Spinner::DescriptorPool::Pointer &descriptorPool);
+            void Update(const std::shared_ptr<DrawCommand> &drawCommand);
 
             void UpdateConstantBuffer(const ConstantBufferType &constants);
-            ConstantBufferType GetMeshConstants();
+            ConstantBufferType GetMeshConstants() const;
 
             void RenderDebugUI();
         };

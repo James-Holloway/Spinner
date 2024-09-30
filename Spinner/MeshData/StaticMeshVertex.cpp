@@ -1,21 +1,24 @@
 #include "StaticMeshVertex.hpp"
 
+#include <tiny_gltf.h>
+
 #include "../Lighting.hpp"
+#include "../Shader.hpp"
+#include "../Scene.hpp"
 
 namespace Spinner::MeshData
 {
-    Shader::Pointer StaticMeshVertex::VertexShader;
-    Shader::Pointer StaticMeshVertex::FragmentShader;
+    ShaderGroup::Pointer StaticMeshVertex::ShaderGroup;
     DescriptorPool::Pointer StaticMeshVertex::DescriptorPool;
 
     std::vector<VertexAttribute> StaticMeshVertex::GetVertexAttributes()
     {
         return std::vector<VertexAttribute>{
-                VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Position)), // vec3 Position
-                VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Normal)), // vec3 Normal
-                VertexAttribute::CreateVec4(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Tangent)), // vec3 Tangent
-                VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Color)), // vec3 Color
-                VertexAttribute::CreateVec2(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, UV)), // vec2 UV
+            VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Position)), // vec3 Position
+            VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Normal)), // vec3 Normal
+            VertexAttribute::CreateVec4(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Tangent)), // vec3 Tangent
+            VertexAttribute::CreateVec3(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, Color)), // vec3 Color
+            VertexAttribute::CreateVec2(VertexAttribute::AutoLocation, offsetof(StaticMeshVertex, UV)), // vec2 UV
         };
     }
 
@@ -32,9 +35,8 @@ namespace Spinner::MeshData
     std::vector<vk::DescriptorSetLayoutBinding> StaticMeshVertex::GetDescriptorSetLayoutBindings()
     {
         return std::vector<vk::DescriptorSetLayoutBinding>{
-                vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
-                vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
-                vk::DescriptorSetLayoutBinding(2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
+            vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr),
+            vk::DescriptorSetLayoutBinding(1, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, nullptr),
         };
     }
 
@@ -46,6 +48,9 @@ namespace Spinner::MeshData
         // Descriptor Set Layout and push constants
         auto descriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(GetDescriptorSetLayoutBindings(), {});
 
+        // Scene
+        auto sceneDescriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(Spinner::Scene::GetDescriptorSetLayoutBindings(), {});
+
         // Lighting
         auto lightingDescriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(Lighting::GetDescriptorSetLayoutBindings(), {}, Lighting::GetDescriptorBindingFlags());
 
@@ -55,6 +60,7 @@ namespace Spinner::MeshData
         vertexShaderCreateInfo.ShaderName = "staticmesh";
         vertexShaderCreateInfo.NextStage = vk::ShaderStageFlagBits::eFragment;
         vertexShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        vertexShaderCreateInfo.SceneDescriptorSetLayout = sceneDescriptorSetLayout;
         vertexShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
 
         ShaderCreateInfo fragmentShaderCreateInfo;
@@ -62,31 +68,30 @@ namespace Spinner::MeshData
         fragmentShaderCreateInfo.ShaderName = "staticmesh";
         fragmentShaderCreateInfo.NextStage = {};
         fragmentShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        fragmentShaderCreateInfo.SceneDescriptorSetLayout = sceneDescriptorSetLayout;
         fragmentShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
 
-        auto shaders = Shader::CreateLinkedShaders({vertexShaderCreateInfo, fragmentShaderCreateInfo});
+        auto shaderGroup = ShaderGroup::CreateShaderGroup({vertexShaderCreateInfo, fragmentShaderCreateInfo});
 
-        VertexShader = shaders[0];
-        FragmentShader = shaders[1];
+        ShaderGroup = shaderGroup;
     }
 
     void StaticMeshVertex::DestroyShaders()
     {
-        FragmentShader.reset();
-        VertexShader.reset();
+        ShaderGroup.reset();
         DescriptorPool.reset();
     }
 
     MeshBuffer::Pointer StaticMeshVertex::CreateTestTriangle()
     {
         std::vector<StaticMeshVertex> vertices{
-                {{-0.5f, 0.5f,  0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {1, 0, 0}, {0.0f, 0.0f}}, // bottom left
-                {{0.5f,  0.5f,  0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {0, 1, 0}, {1.0f, 0.0f}}, // bottom right
-                {{0.0f,  -0.5f, 0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {0, 0, 1}, {0.5f, 0.5f}}, // top middle
+            {{-0.5f, 0.5f, 0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {1, 0, 0}, {0.0f, 0.0f}}, // bottom left
+            {{0.5f, 0.5f, 0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {0, 1, 0}, {1.0f, 0.0f}}, // bottom right
+            {{0.0f, -0.5f, 0.0f}, {0, 0, -1}, {0, 0, 0, 1}, {0, 0, 1}, {0.5f, 0.5f}}, // top middle
         };
 
         std::vector<MeshBuffer::IndexType> indices{
-                0, 1, 2
+            0, 1, 2
         };
 
         return CreateMeshBuilder().SetVertexData(vertices).SetIndices(indices).Create();

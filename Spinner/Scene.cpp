@@ -283,7 +283,7 @@ namespace Spinner
             auto meshName = meshInformation.Name;
             auto meshComponent = sceneObject->AddComponent<Components::MeshComponent>();
             meshComponent->SetMeshBuffer(meshBuffer);
-            meshComponent->PopulateFromShaders(MeshData::StaticMeshVertex::VertexShader, MeshData::StaticMeshVertex::FragmentShader, MeshData::StaticMeshVertex::DescriptorPool);
+            meshComponent->SetShaderGroup(MeshData::StaticMeshVertex::ShaderGroup);
             meshComponent->SetComponentName(meshName);
 
             if (meshInformation.MaterialIndex >= 0)
@@ -742,6 +742,15 @@ namespace Spinner
         }
 
         return GlobalLighting.lock();
+    }
+
+    std::vector<vk::DescriptorSetLayoutBinding> Scene::GetDescriptorSetLayoutBindings()
+    {
+        auto layoutBindings = std::vector<vk::DescriptorSetLayoutBinding>{
+            vk::DescriptorSetLayoutBinding(0, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eGeometry | vk::ShaderStageFlagBits::eFragment, nullptr),
+        };
+
+        return layoutBindings;
     }
 
     void Scene::RenderHierarchy()

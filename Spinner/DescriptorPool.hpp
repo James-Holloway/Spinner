@@ -6,14 +6,10 @@
 
 namespace Spinner
 {
-    class ShaderInstance;
-
     class Shader;
 
     class DescriptorPool
     {
-        friend class ShaderInstance;
-
     public:
         using Pointer = std::shared_ptr<DescriptorPool>;
 
@@ -23,6 +19,7 @@ namespace Spinner
         [[nodiscard]] std::vector<vk::DescriptorSet> AllocateDescriptorSets(const std::shared_ptr<Shader> &shader) const;
         [[nodiscard]] std::vector<vk::DescriptorSet> AllocateDescriptorSets(const vk::ArrayProxy<vk::DescriptorSetLayout>& layouts) const;
         void FreeDescriptorSets(const vk::ArrayProxy<vk::DescriptorSet> &sets) const;
+        void ResetPool() const;
 
     public:
         vk::DescriptorPool VkDescriptorPool;

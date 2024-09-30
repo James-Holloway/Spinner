@@ -9,7 +9,7 @@
 
 namespace Spinner
 {
-    class ShaderInstance;
+    class DrawCommand;
 
     class Material
     {
@@ -31,7 +31,7 @@ namespace Spinner
         Pointer Duplicate();
 
         void ApplyMaterial(MeshConstants &constants);
-        void ApplyTextures(std::shared_ptr<ShaderInstance> &shaderInstance);
+        void ApplyTextures(const DrawCommand *drawCommand);
 
         [[nodiscard]] std::string GetName() const;
         void SetName(const std::string &name);
