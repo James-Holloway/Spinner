@@ -23,7 +23,7 @@ namespace Spinner
         Buffer::Pointer SceneBuffer;
         SceneConstants LocalSceneBuffer{};
 
-        std::vector<Spinner::DrawCommand::Pointer> DrawCommands;
+        std::multimap<Spinner::Pass, Spinner::DrawCommand::Pointer> DrawCommands;
 
     protected:
         Spinner::DrawCommand::Pointer CreateDrawCommand(const Spinner::ShaderGroup::Pointer &shaderGroup);

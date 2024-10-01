@@ -1,9 +1,5 @@
 #include "Texture.hpp"
 
-#define STBI_MAX_DIMENSIONS (1 << 27)
-
-#include <stb_image.h>
-
 #include <utility>
 #include "Utilities.hpp"
 
@@ -77,6 +73,16 @@ namespace Spinner
     void Texture::SetName(const std::string &name)
     {
         Name = name;
+    }
+
+    bool Texture::GetIsTransparent() const
+    {
+        return Image->GetIsTransparent();
+    }
+
+    void Texture::SetIsTransparent(const bool transparent)
+    {
+        Image->SetIsTransparent(transparent);
     }
 
     Texture::Pointer Texture::PixelColor(glm::vec4 color)

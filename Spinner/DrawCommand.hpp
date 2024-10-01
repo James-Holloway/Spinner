@@ -5,7 +5,7 @@
 #include "Lighting.hpp"
 #include "Material.hpp"
 #include "MeshBuffer.hpp"
-#include "SceneObject.hpp"
+#include "Passes.hpp"
 #include "Shader.hpp"
 
 namespace Spinner
@@ -29,11 +29,16 @@ namespace Spinner
         Spinner::Lighting::Pointer Lighting;
         Spinner::Buffer::Pointer SceneBuffer;
 
+        Spinner::Pass Pass = OpaquePass;
+
     public:
         void UseMeshBuffer(const Spinner::MeshBuffer::Pointer &meshBuffer);
         void UseMaterial(const Spinner::Material::Pointer &material);
         void UseLighting(const Spinner::Lighting::Pointer &lighting);
         void UseSceneBuffer(const Spinner::Buffer::Pointer &sceneBuffer);
+
+        [[nodiscard]] Spinner::Pass GetPass() const;
+        void UsePass(Spinner::Pass pass);
 
         void DrawMesh(const CommandBuffer::Pointer &commandBuffer);
 

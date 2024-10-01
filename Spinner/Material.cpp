@@ -159,6 +159,22 @@ namespace Spinner
         DefaultTextureTypes.at(textureIndex) = defaultTextureType;
     }
 
+    bool Material::IsTransparent() const
+    {
+        for (auto &texture : Textures)
+        {
+            if (texture == nullptr)
+                continue;
+
+            if (texture->GetIsTransparent())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void Material::RenderDebugUI()
     {
         // --- Material ---

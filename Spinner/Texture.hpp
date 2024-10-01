@@ -29,6 +29,8 @@ namespace Spinner
         void SetSampler(Spinner::Sampler::Pointer sampler);
         [[nodiscard]] std::string GetName() const;
         void SetName(const std::string &name);
+        [[nodiscard]] bool GetIsTransparent() const;
+        void SetIsTransparent(bool transparent);
 
     protected:
         std::string Name;

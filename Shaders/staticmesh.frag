@@ -33,10 +33,11 @@ void main()
     float roughness = materialProperties.x;
     float metallic = materialProperties.y;
 
-    vec3 matCol = materialColor.xyz * inColor.xyz;
-    matCol *= pow(texture(mainTexture, inTexCoord).xyz, vec3(2.2f));
+    vec3 matCol = materialColor.rgb * inColor.rgb;
+    vec4 texColor = texture(mainTexture, inTexCoord);
+    matCol *= pow(texColor.rgb, vec3(2.2f));
 
     // Use PBR lighting
     vec3 color = CalculateLighting(inWorldPosition, V, N, metallic, roughness, matCol);
-    outColor = vec4(color, 1.0);
+    outColor = vec4(color, texColor.a);
 }

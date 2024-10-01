@@ -76,6 +76,11 @@ namespace Spinner::Components
         drawCommand->UseMeshBuffer(MeshBuffer);
         drawCommand->UseMaterial(Material);
 
+        if (Material->IsTransparent())
+        {
+            drawCommand->UsePass(TransparentPass);
+        }
+
         // Run shader specific code (e.g. binding mesh constants buffer)
         ShaderGroup->RunUpdateDrawComponentCallbacks(drawCommand, this);
     }

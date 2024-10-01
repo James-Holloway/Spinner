@@ -1,8 +1,11 @@
 #include "Image.hpp"
 
+#define STBI_MAX_DIMENSIONS (1 << 27)
+
 #include <utility>
 #include <stb_image.h>
 
+#include "GLM.hpp"
 #include "Graphics.hpp"
 #include "VulkanUtilities.hpp"
 #include "Buffer.hpp"
@@ -13,7 +16,6 @@ namespace Spinner
 {
     Image::Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : Image(vk::Extent3D{extent.width, extent.height, 1}, format, usageFlags, imageType, tiling, mipLevels, memoryUsage)
     {
-
     }
 
     Image::Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : ImageExtent(extent), Format(format), ImageUsageFlags(usageFlags), ImageType(imageType), ImageTiling(tiling)
@@ -124,6 +126,9 @@ namespace Spinner
         {
             Graphics::EndSingleTimeCommands(commandBuffer);
         }
+
+        // Test and set IsTransparent
+        SetIsTransparent(IsTransparentTexture(Format, textureData, textureDataSize));
     }
 
     void Image::Write(const std::vector<uint8_t> &textureData, vk::ImageAspectFlags aspectFlags, Spinner::CommandBuffer::Pointer commandBuffer)
@@ -171,6 +176,16 @@ namespace Spinner
     vk::ImageView Image::GetMainImageView()
     {
         return MainImageView;
+    }
+
+    bool Image::GetIsTransparent() const
+    {
+        return IsTransparent;
+    }
+
+    void Image::SetIsTransparent(const bool transparent)
+    {
+        IsTransparent = transparent;
     }
 
     Image::Pointer Image::CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
@@ -313,5 +328,88 @@ namespace Spinner
         }
 
         return image;
+    }
+
+    bool Image::IsTransparentTexture(const vk::Format format, const uint8_t *textureData, const size_t textureSize)
+    {
+        constexpr size_t CheckEveryXPixels = 4; // We don't need to check every pixel, we'll skip every X pixels
+        constexpr size_t Components = 4; // There are 4 components when alpha is involved
+
+        switch (format)
+        {
+            // byte
+            case vk::Format::eR8G8B8A8Unorm:
+            case vk::Format::eR8G8B8A8Uint:
+            case vk::Format::eR8G8B8A8Srgb:
+            {
+                for (size_t i = 0; i < textureSize; i += Components * CheckEveryXPixels)
+                {
+                    if (textureData[i + 3] < 255)
+                    {
+                        return true;
+                    }
+                }
+                break;
+            }
+
+            // half
+            case vk::Format::eR16G16B16A16Sfloat:
+            {
+                for (size_t i = 0; i < textureSize / sizeof(uint16_t); i += Components * CheckEveryXPixels)
+                {
+                    uint16_t value = reinterpret_cast<const uint16_t *>(textureData)[i + 3];
+                    float alpha16 = glm::unpackHalf1x16(value);
+                    if (alpha16 < 1.0f)
+                    {
+                        return true;
+                    }
+                }
+                break;
+            }
+            // unsigned short
+            case vk::Format::eR16G16B16A16Uint:
+            {
+                for (size_t i = 0; i < textureSize / sizeof(uint16_t); i += Components * CheckEveryXPixels)
+                {
+                    const auto value = reinterpret_cast<const uint16_t *>(textureData)[i + 3];
+                    if (value < std::numeric_limits<uint16_t>::max())
+                    {
+                        return true;
+                    }
+                }
+                break;
+            }
+            // signed short
+            case vk::Format::eR16G16B16A16Sint:
+            {
+                for (size_t i = 0; i < textureSize / sizeof(uint16_t); i += Components * CheckEveryXPixels)
+                {
+                    const auto value = reinterpret_cast<const uint16_t *>(textureData)[i + 3];
+                    if (value < std::numeric_limits<int16_t>::max())
+                    {
+                        return true;
+                    }
+                }
+                break;
+            }
+            // float
+            case vk::Format::eR32G32B32A32Sfloat:
+            {
+                for (size_t i = 0; i < textureSize / sizeof(uint32_t); i += Components * CheckEveryXPixels)
+                {
+                    const auto value = reinterpret_cast<const float *>(textureData)[i + 3];
+                    if (value < 1.0f)
+                    {
+                        return true;
+                    }
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        return false;
     }
 } // Spinner

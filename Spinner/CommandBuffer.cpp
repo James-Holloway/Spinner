@@ -110,7 +110,7 @@ namespace Spinner
         // Alpha blending equation
         vk::ColorBlendEquationEXT colorBlendEquation;
         colorBlendEquation.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
-        colorBlendEquation.dstColorBlendFactor = vk::BlendFactor::eOneMinusConstantAlpha;
+        colorBlendEquation.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
         colorBlendEquation.colorBlendOp = vk::BlendOp::eAdd;
         colorBlendEquation.srcAlphaBlendFactor = vk::BlendFactor::eOne;
         colorBlendEquation.dstAlphaBlendFactor = vk::BlendFactor::eZero;

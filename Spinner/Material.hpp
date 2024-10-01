@@ -51,6 +51,8 @@ namespace Spinner
         [[nodiscard]] DefaultTextureType GetDefaultTextureType(uint32_t textureIndex) const;
         void SetDefaultTextureType(uint32_t textureIndex, DefaultTextureType defaultTextureType);
 
+        [[nodiscard]] bool IsTransparent() const;
+
         void RenderDebugUI();
 
     protected:

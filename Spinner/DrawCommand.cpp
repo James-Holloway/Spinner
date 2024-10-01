@@ -71,6 +71,16 @@ namespace Spinner
         }
     }
 
+    Spinner::Pass DrawCommand::GetPass() const
+    {
+        return Pass;
+    }
+
+    void DrawCommand::UsePass(const Spinner::Pass pass)
+    {
+        Pass = pass;
+    }
+
     void DrawCommand::DrawMesh(const CommandBuffer::Pointer &commandBuffer)
     {
         if (MeshBuffer == nullptr || Material == nullptr)

@@ -20,9 +20,7 @@ namespace Spinner
 
     Spinner::DrawCommand::Pointer DrawManager::CreateDrawCommand(const Spinner::ShaderGroup::Pointer &shaderGroup)
     {
-        auto drawCommand = std::make_shared<DrawCommand>(shaderGroup, DescriptorPool);
-        DrawCommands.push_back(drawCommand);
-        return drawCommand;
+        return std::make_shared<DrawCommand>(shaderGroup, DescriptorPool);
     }
 
     void DrawManager::SetScene(const std::shared_ptr<Spinner::Scene> &scene)
@@ -74,6 +72,8 @@ namespace Spinner
                 drawCommand->UseLighting(lighting);
 
                 meshComponent->Update(drawCommand);
+
+                DrawCommands.emplace(drawCommand->GetPass(), drawCommand);
             }
 
             // Get active light components
@@ -105,7 +105,8 @@ namespace Spinner
             return;
         }
 
-        for (const auto &drawCommand : DrawCommands)
+        // Iterates over in a non-descending order (a lower pass index goes before a higher pass index)
+        for (const auto &[set, drawCommand] : DrawCommands)
         {
             drawCommand->DrawMesh(commandBuffer);
         }

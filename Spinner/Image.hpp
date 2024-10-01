@@ -45,6 +45,9 @@ namespace Spinner
         vk::ImageView CreateMainImageView(vk::ImageAspectFlags imageAspectFlags, vk::ImageViewType imageViewType = vk::ImageViewType::e2D, std::optional<vk::ImageSubresourceRange> subresourceRange = {});
         vk::ImageView GetMainImageView();
 
+        [[nodiscard]] bool GetIsTransparent() const;
+        void SetIsTransparent(bool transparent);
+
     protected:
         vk::Image VkImage;
         vma::Allocation VmaAllocation;
@@ -59,14 +62,16 @@ namespace Spinner
 
         vk::ImageLayout CurrentImageLayout = vk::ImageLayout::eUndefined;
 
+        bool IsTransparent = false;
+
     public:
         static Pointer CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
         static Pointer CreateImage3D(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e3D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
         static std::vector<uint8_t> DecodeEmbeddedImageData(const std::vector<uint8_t> &data, int &width, int &height, int &channels, bool &is16Bit);
         static Pointer LoadFromEmbeddedImageData(const std::vector<uint8_t> &data, int mipLevels = 1);
-        static Pointer LoadFromTextureFile(const std::string& textureFilename, uint32_t mipLevels = 1);
+        static Pointer LoadFromTextureFile(const std::string &textureFilename, uint32_t mipLevels = 1);
+        static bool IsTransparentTexture(vk::Format format, const uint8_t *textureData, size_t textureSize);
     };
-
 } // Spinner
 
 #endif //SPINNER_IMAGE_HPP
