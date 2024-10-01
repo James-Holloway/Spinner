@@ -9,7 +9,6 @@
 
 namespace Spinner
 {
-
     using CallbackIdType = size_t;
 
     struct CallbackOwnerToken
@@ -118,7 +117,7 @@ namespace Spinner
     {
     public:
         using FunctionType = std::function<void(Args...)>;
-        using OwnedCallback = Callback<Args...>::OwnedCallback;
+        using OwnedCallback = typename Callback<Args...>::OwnedCallback;
 
     protected:
         OwnedCallback Callback;
@@ -155,7 +154,6 @@ namespace Spinner
             }
         }
     };
-
 } // Spinner
 
 #endif //SPINNER_CALLBACK_HPP

@@ -39,6 +39,11 @@ namespace Spinner
         pipelineLayoutCreateInfo.setSetLayouts(layouts);
         pipelineLayoutCreateInfo.setPushConstantRanges(pushConstants);
         VkPipelineLayout = Graphics::GetDevice().createPipelineLayout(pipelineLayoutCreateInfo);
+
+        if (createInfo.UpdateDrawComponentCallback != nullptr)
+        {
+            RegisterCallback(UpdateDrawComponentCallback, createInfo.UpdateDrawComponentCallback);
+        }
     }
 
     Shader::~Shader()
@@ -139,24 +144,6 @@ namespace Spinner
         return layouts;
     }
 
-    vk::DescriptorSetLayout Shader::GetSceneDescriptorSetLayout() const
-    {
-        if (SceneDescriptorSetLayout == nullptr)
-        {
-            return nullptr;
-        }
-        return SceneDescriptorSetLayout->GetDescriptorSetLayout();
-    }
-
-    vk::DescriptorSetLayout Shader::GetLightingDescriptorSetLayout() const
-    {
-        if (LightingDescriptorSetLayout == nullptr)
-        {
-            return nullptr;
-        }
-        return LightingDescriptorSetLayout->GetDescriptorSetLayout();
-    }
-
     vk::PipelineLayout Shader::GetPipelineLayout() const
     {
         return VkPipelineLayout;
@@ -175,6 +162,34 @@ namespace Spinner
         }
 
         return {};
+    }
+
+    vk::DescriptorSetLayout Shader::GetSceneDescriptorSetLayout() const
+    {
+        if (SceneDescriptorSetLayout == nullptr)
+        {
+            return nullptr;
+        }
+        return SceneDescriptorSetLayout->GetDescriptorSetLayout();
+    }
+
+    vk::DescriptorSetLayout Shader::GetLightingDescriptorSetLayout() const
+    {
+        if (LightingDescriptorSetLayout == nullptr)
+        {
+            return nullptr;
+        }
+        return LightingDescriptorSetLayout->GetDescriptorSetLayout();
+    }
+
+    uint32_t Shader::GetSceneDescriptorSetIndex() const
+    {
+        return SceneDescriptorSetIndex;
+    }
+
+    uint32_t Shader::GetLightingDescriptorSetIndex() const
+    {
+        return LightingDescriptorSetIndex;
     }
 
     uint32_t Shader::GetBindingFromIndex(uint32_t set, uint32_t indexOfType, vk::DescriptorType type)
@@ -219,16 +234,6 @@ namespace Spinner
         return InvalidBindingIndex;
     }
 
-    uint32_t Shader::GetSceneDescriptorSetIndex() const
-    {
-        return SceneDescriptorSetIndex;
-    }
-
-    uint32_t Shader::GetLightingDescriptorSetIndex() const
-    {
-        return LightingDescriptorSetIndex;
-    }
-
     void ShaderGroup::BindShaders(const CommandBuffer::Pointer &commandBuffer) const
     {
         // Unbind unused shaders
@@ -241,6 +246,14 @@ namespace Spinner
         {
             commandBuffer->TrackObject(shader);
             commandBuffer->BindShader(shader);
+        }
+    }
+
+    void ShaderGroup::RunUpdateDrawComponentCallbacks(const std::shared_ptr<Spinner::DrawCommand> &drawCommand, Components::Component *drawComponent)
+    {
+        for (const auto &shader : Shaders)
+        {
+            shader->UpdateDrawComponentCallback.Run(drawCommand, drawComponent);
         }
     }
 

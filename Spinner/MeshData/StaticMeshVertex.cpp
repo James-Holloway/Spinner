@@ -70,6 +70,7 @@ namespace Spinner::MeshData
         fragmentShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
         fragmentShaderCreateInfo.SceneDescriptorSetLayout = sceneDescriptorSetLayout;
         fragmentShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
+        fragmentShaderCreateInfo.UpdateDrawComponentCallback = UpdateDrawComponentCallback;
 
         auto shaderGroup = ShaderGroup::CreateShaderGroup({vertexShaderCreateInfo, fragmentShaderCreateInfo});
 
@@ -95,5 +96,16 @@ namespace Spinner::MeshData
         };
 
         return CreateMeshBuilder().SetVertexData(vertices).SetIndices(indices).Create();
+    }
+
+    void StaticMeshVertex::UpdateDrawComponentCallback(const Spinner::DrawCommand::Pointer &drawCommand, Components::Component *drawComponent)
+    {
+        if (const auto meshComponent = Components::AsComponentType<Components::MeshComponent>(drawComponent); meshComponent != nullptr)
+        {
+            constexpr uint32_t MeshConstantsBinding = 0;
+            constexpr uint32_t MeshConstantsSet = 0;
+
+            drawCommand->UpdateDescriptorBuffer(MeshConstantsBinding, meshComponent->GetMeshConstantsBuffer(), MeshConstantsSet);
+        }
     }
 }

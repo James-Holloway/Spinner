@@ -19,7 +19,8 @@ namespace Spinner
         {
         public:
             inline explicit ComponentError(const std::string &text) : Text("Spinner ComponentError: " + text)
-            {};
+            {
+            };
 
             [[nodiscard]] const char *what() const noexcept override
             {
@@ -70,6 +71,28 @@ namespace Spinner
         inline const char *GetComponentName()
         {
             return "Component";
+        }
+
+        template<IsComponent T>
+        inline bool IsComponentType(Component *component)
+        {
+            if (component == nullptr)
+            {
+                return false;
+            }
+
+            return component->GetComponentId() == GetComponentId<T>();
+        }
+
+        template<IsComponent T>
+        inline T *AsComponentType(Component *component)
+        {
+            if (!IsComponentType<T>(component))
+            {
+                return nullptr;
+            }
+
+            return dynamic_cast<T *>(component);
         }
 
         template<IsComponent T>

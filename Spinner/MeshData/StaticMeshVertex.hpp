@@ -1,6 +1,7 @@
 #ifndef SPINNER_STATICMESHVERTEX_HPP
 #define SPINNER_STATICMESHVERTEX_HPP
 
+#include "../DrawCommand.hpp"
 #include "../MeshBuilder.hpp"
 #include "../GLM.hpp"
 #include "../Utilities.hpp"
@@ -31,6 +32,8 @@ namespace Spinner::MeshData
         static void DestroyShaders();
 
         static MeshBuffer::Pointer CreateTestTriangle();
+        
+        static void UpdateDrawComponentCallback(const Spinner::DrawCommand::Pointer &drawCommand, Components::Component *drawComponent);
     };
 
 #pragma pack(pop)

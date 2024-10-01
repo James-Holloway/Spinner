@@ -23,7 +23,7 @@ namespace Spinner
         Spinner::CallbackOwnerToken::Pointer CallbackOwnerToken;
 
         template<typename... Args>
-        inline CallbackIdType RegisterCallback(Callback<Args...> &callback, Callback<Args...>::FunctionType function)
+        inline CallbackIdType RegisterCallback(Callback<Args...> &callback, typename Callback<Args...>::FunctionType function)
         {
             return callback.Register(function, CallbackOwnerToken);
         }
@@ -35,7 +35,7 @@ namespace Spinner
         }
 
         template<typename... Args>
-        inline void SetSingleCallback(CallbackSingle<Args...> &callbackSingle, CallbackSingle<Args...>::FunctionType function)
+        inline void SetSingleCallback(CallbackSingle<Args...> &callbackSingle, typename CallbackSingle<Args...>::FunctionType function)
         {
             callbackSingle.SetCallback(function, CallbackOwnerToken);
         }

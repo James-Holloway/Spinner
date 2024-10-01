@@ -57,10 +57,15 @@ namespace Spinner::Components
         return LocalConstantBuffer;
     }
 
+    Spinner::Buffer::Pointer MeshComponent::GetMeshConstantsBuffer() const
+    {
+        return ConstantBuffer;
+    }
+
     void MeshComponent::Update(const std::shared_ptr<DrawCommand> &drawCommand)
     {
-        // Cannot render without material
-        if (Material == nullptr)
+        // Cannot render without material or shader group
+        if (Material == nullptr || ShaderGroup == nullptr)
             return;
 
         // Update material
@@ -71,8 +76,8 @@ namespace Spinner::Components
         drawCommand->UseMeshBuffer(MeshBuffer);
         drawCommand->UseMaterial(Material);
 
-        // Shader specific. TODO: use information provided by Shader
-        drawCommand->UpdateDescriptorBuffer(0, ConstantBuffer, 0);
+        // Run shader specific code (e.g. binding mesh constants buffer)
+        ShaderGroup->RunUpdateDrawComponentCallbacks(drawCommand, this);
     }
 
     void MeshComponent::RenderDebugUI()

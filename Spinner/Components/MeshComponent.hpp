@@ -47,6 +47,8 @@ namespace Spinner
             void UpdateConstantBuffer(const ConstantBufferType &constants);
             ConstantBufferType GetMeshConstants() const;
 
+            [[nodiscard]] Spinner::Buffer::Pointer GetMeshConstantsBuffer() const;
+
             void RenderDebugUI();
         };
 
