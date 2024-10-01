@@ -27,7 +27,6 @@ namespace Spinner::MeshData
 
         // Shaders & descriptor pool
         static Spinner::ShaderGroup::Pointer ShaderGroup;
-        static Spinner::DescriptorPool::Pointer DescriptorPool;
         static void CreateShaders();
         static void DestroyShaders();
 

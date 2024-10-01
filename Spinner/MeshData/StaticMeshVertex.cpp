@@ -9,7 +9,6 @@
 namespace Spinner::MeshData
 {
     ShaderGroup::Pointer StaticMeshVertex::ShaderGroup;
-    DescriptorPool::Pointer StaticMeshVertex::DescriptorPool;
 
     std::vector<VertexAttribute> StaticMeshVertex::GetVertexAttributes()
     {
@@ -42,9 +41,6 @@ namespace Spinner::MeshData
 
     void StaticMeshVertex::CreateShaders()
     {
-        // Descriptor Pool
-        DescriptorPool = DescriptorPool::CreateDefault();
-
         // Descriptor Set Layout and push constants
         auto descriptorSetLayout = DescriptorSetLayout::CreateDescriptorSetLayout(GetDescriptorSetLayoutBindings(), {});
 
@@ -80,7 +76,6 @@ namespace Spinner::MeshData
     void StaticMeshVertex::DestroyShaders()
     {
         ShaderGroup.reset();
-        DescriptorPool.reset();
     }
 
     MeshBuffer::Pointer StaticMeshVertex::CreateTestTriangle()
