@@ -25,8 +25,9 @@ namespace Spinner::MeshData
         static MeshBuilder CreateMeshBuilder();
         static std::vector<vk::DescriptorSetLayoutBinding> GetDescriptorSetLayoutBindings();
 
-        // Shaders & descriptor pool
+        // Shaders
         static Spinner::ShaderGroup::Pointer ShaderGroup;
+        static Spinner::ShaderGroup::Pointer ShadowShaderGroup;
         static void CreateShaders();
         static void DestroyShaders();
 

@@ -6,7 +6,7 @@
 namespace Spinner
 {
     static std::vector<const char *> ValidationLayers = {
-            "VK_LAYER_KHRONOS_validation"
+        "VK_LAYER_KHRONOS_validation"
     };
 
     static Graphics *GraphicsInstance;
@@ -197,8 +197,8 @@ namespace Spinner
             return 0;
         }
 
-        // Application also requires bindless descriptor features
-        if (!vulkan12Features.descriptorBindingPartiallyBound || !vulkan12Features.shaderSampledImageArrayNonUniformIndexing || !vulkan12Features.shaderUniformBufferArrayNonUniformIndexing || !vulkan12Features.shaderStorageBufferArrayNonUniformIndexing || !vulkan12Features.descriptorBindingSampledImageUpdateAfterBind || !vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind || !vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind)
+        // Application also requires bindless descriptor features & runtime descriptor array
+        if (!vulkan12Features.descriptorBindingPartiallyBound || !vulkan12Features.shaderSampledImageArrayNonUniformIndexing || !vulkan12Features.shaderUniformBufferArrayNonUniformIndexing || !vulkan12Features.shaderStorageBufferArrayNonUniformIndexing || !vulkan12Features.descriptorBindingSampledImageUpdateAfterBind || !vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind || !vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind || !vulkan12Features.runtimeDescriptorArray)
         {
             return 0;
         }
@@ -314,6 +314,7 @@ namespace Spinner
         vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = true;
         vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind = true;
         vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind = true;
+        vulkan12Features.runtimeDescriptorArray = true;
 
         auto &vulkan13Features = chain.get<vk::PhysicalDeviceVulkan13Features>();
         vulkan13Features.dynamicRendering = true;
@@ -427,13 +428,15 @@ namespace Spinner
         commandBuffer->End();
     }
 
+    constexpr unsigned long LongTimeTimeout = 1ul * 1000ul * 1000ul * 1000ul; // 1 seconds (2e9 nanoseconds)
+
     void Graphics::DrawFrame()
     {
-        vk::detail::resultCheck(Device.waitForFences(1, &InFlightGraphicsFences[CurrentFrame], true, std::numeric_limits<uint64_t>::max()), "Failed while waiting for previous frame fence");
+        vk::detail::resultCheck(Device.waitForFences(1, &InFlightGraphicsFences[CurrentFrame], true, LongTimeTimeout), "Failed while waiting for previous frame fence");
 
         // Acquire next image
         uint32_t imageIndex = 0;
-        auto nextImageResult = Device.acquireNextImageKHR(Swapchain->GetSwapchainKHR(), std::numeric_limits<uint64_t>::max(), ImageAvailableSemaphores[CurrentFrame], nullptr, &imageIndex);
+        auto nextImageResult = Device.acquireNextImageKHR(Swapchain->GetSwapchainKHR(), LongTimeTimeout, ImageAvailableSemaphores[CurrentFrame], nullptr, &imageIndex);
         if (nextImageResult == vk::Result::eErrorOutOfDateKHR)
         {
             RecreateSwapchain();
@@ -528,7 +531,7 @@ namespace Spinner
 
         GraphicsInstance->GraphicsQueue.submit(submitInfo, fence);
 
-        auto result = device.waitForFences(fence, true, std::numeric_limits<uint64_t>::max());
+        auto result = device.waitForFences(fence, true, LongTimeTimeout);
 
         device.destroyFence(fence);
         device.freeCommandBuffers(GraphicsInstance->GraphicsCommandPool, commandBuffer->VkCommandBuffer);
@@ -637,6 +640,4 @@ namespace Spinner
         }
         throw std::runtime_error("Graphics' MainWindow was nullptr, cannot get Input");
     }
-
-
 } // Spinner

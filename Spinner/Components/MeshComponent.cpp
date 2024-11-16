@@ -26,6 +26,16 @@ namespace Spinner::Components
         ShaderGroup = shaderGroup;
     }
 
+    Spinner::ShaderGroup::Pointer MeshComponent::GetShadowShaderGroup() const
+    {
+        return ShadowShaderGroup;
+    }
+
+    void MeshComponent::SetShadowShaderGroup(const Spinner::ShaderGroup::Pointer &shaderGroup)
+    {
+        ShadowShaderGroup = shaderGroup;
+    }
+
     Spinner::MeshBuffer::Pointer MeshComponent::GetMeshBuffer()
     {
         return MeshBuffer;
@@ -83,6 +93,23 @@ namespace Spinner::Components
 
         // Run shader specific code (e.g. binding mesh constants buffer)
         ShaderGroup->RunUpdateDrawComponentCallbacks(drawCommand, this);
+    }
+
+    void MeshComponent::UpdateShadow(const std::shared_ptr<DrawCommand> &drawCommand)
+    {
+        // Cannot render shadow without material or shadow shader group
+        if (Material == nullptr || ShadowShaderGroup == nullptr)
+            return;
+
+        // Update material
+        auto constants = GetMeshConstants();
+        Material->ApplyMaterial(constants);
+        UpdateConstantBuffer(constants);
+
+        drawCommand->UseMeshBuffer(MeshBuffer);
+        drawCommand->UseMaterial(Material);
+        
+        ShadowShaderGroup->RunUpdateDrawComponentCallbacks(drawCommand, this);
     }
 
     void MeshComponent::RenderDebugUI()

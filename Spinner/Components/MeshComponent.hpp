@@ -27,6 +27,7 @@ namespace Spinner
 
         protected:
             Spinner::ShaderGroup::Pointer ShaderGroup;
+            Spinner::ShaderGroup::Pointer ShadowShaderGroup;
             Spinner::MeshBuffer::Pointer MeshBuffer;
             Spinner::Material::Pointer Material = nullptr;
             Spinner::Buffer::Pointer ConstantBuffer;
@@ -36,6 +37,9 @@ namespace Spinner
             [[nodiscard]] Spinner::ShaderGroup::Pointer GetShaderGroup() const;
             void SetShaderGroup(const Spinner::ShaderGroup::Pointer &shaderGroup);
 
+            [[nodiscard]] Spinner::ShaderGroup::Pointer GetShadowShaderGroup() const;
+            void SetShadowShaderGroup(const Spinner::ShaderGroup::Pointer &shaderGroup);
+
             Spinner::MeshBuffer::Pointer GetMeshBuffer();
             void SetMeshBuffer(Spinner::MeshBuffer::Pointer newMeshBuffer);
 
@@ -43,9 +47,10 @@ namespace Spinner
             void SetMaterial(const Spinner::Material::Pointer &material);
 
             void Update(const std::shared_ptr<DrawCommand> &drawCommand);
+            void UpdateShadow(const std::shared_ptr<DrawCommand> &drawCommand);
 
             void UpdateConstantBuffer(const ConstantBufferType &constants);
-            ConstantBufferType GetMeshConstants() const;
+            [[nodiscard]] ConstantBufferType GetMeshConstants() const;
 
             [[nodiscard]] Spinner::Buffer::Pointer GetMeshConstantsBuffer() const;
 

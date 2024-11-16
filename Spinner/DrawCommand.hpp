@@ -10,8 +10,12 @@
 
 namespace Spinner
 {
+    class DrawManager;
+
     class DrawCommand final
     {
+        friend class DrawManager;
+
     public:
         using Pointer = std::shared_ptr<DrawCommand>;
 

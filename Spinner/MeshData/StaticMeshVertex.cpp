@@ -9,6 +9,7 @@
 namespace Spinner::MeshData
 {
     ShaderGroup::Pointer StaticMeshVertex::ShaderGroup;
+    ShaderGroup::Pointer StaticMeshVertex::ShadowShaderGroup;
 
     std::vector<VertexAttribute> StaticMeshVertex::GetVertexAttributes()
     {
@@ -68,14 +69,32 @@ namespace Spinner::MeshData
         fragmentShaderCreateInfo.LightingDescriptorSetLayout = lightingDescriptorSetLayout;
         fragmentShaderCreateInfo.UpdateDrawComponentCallback = UpdateDrawComponentCallback;
 
-        auto shaderGroup = ShaderGroup::CreateShaderGroup({vertexShaderCreateInfo, fragmentShaderCreateInfo});
+        ShaderGroup = ShaderGroup::CreateShaderGroup({vertexShaderCreateInfo, fragmentShaderCreateInfo});
 
-        ShaderGroup = shaderGroup;
+        ShaderCreateInfo shadowVertexShaderCreateInfo;
+        shadowVertexShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eVertex;
+        shadowVertexShaderCreateInfo.ShaderName = "staticshadow";
+        shadowVertexShaderCreateInfo.NextStage = vk::ShaderStageFlagBits::eFragment;
+        shadowVertexShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        shadowVertexShaderCreateInfo.SceneDescriptorSetLayout = sceneDescriptorSetLayout;
+        shadowVertexShaderCreateInfo.LightingDescriptorSetLayout = nullptr;
+
+        ShaderCreateInfo shadowFragmentShaderCreateInfo;
+        shadowFragmentShaderCreateInfo.ShaderStage = vk::ShaderStageFlagBits::eFragment;
+        shadowFragmentShaderCreateInfo.ShaderName = "staticshadow";
+        shadowFragmentShaderCreateInfo.NextStage = {};
+        shadowFragmentShaderCreateInfo.DescriptorSetLayouts = {descriptorSetLayout};
+        shadowFragmentShaderCreateInfo.SceneDescriptorSetLayout = sceneDescriptorSetLayout;
+        shadowFragmentShaderCreateInfo.LightingDescriptorSetLayout = nullptr;
+        shadowFragmentShaderCreateInfo.UpdateDrawComponentCallback = UpdateDrawComponentCallback;
+
+        ShadowShaderGroup = ShaderGroup::CreateShaderGroup({shadowVertexShaderCreateInfo, shadowFragmentShaderCreateInfo});
     }
 
     void StaticMeshVertex::DestroyShaders()
     {
         ShaderGroup.reset();
+        ShadowShaderGroup.reset();
     }
 
     MeshBuffer::Pointer StaticMeshVertex::CreateTestTriangle()

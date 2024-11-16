@@ -126,10 +126,13 @@ namespace Spinner
         VkCommandBuffer.setAlphaToCoverageEnableEXT(false, VulkanInstance::GetDispatchLoader());
         VkCommandBuffer.setStencilTestEnable(false); // need to set stencilOp, stencilCompareMask, stencilWriteMask and stencilReference if true
         VkCommandBuffer.setSampleMaskEXT(vk::SampleCountFlagBits::e1, sampleMask, VulkanInstance::GetDispatchLoader());
-        VkCommandBuffer.setColorBlendEnableEXT(0, colorBlendEnables, VulkanInstance::GetDispatchLoader());
-        VkCommandBuffer.setColorWriteMaskEXT(0, colorBlendComponentFlags, VulkanInstance::GetDispatchLoader());
-        VkCommandBuffer.setColorBlendEquationEXT(0, colorBlendEquations, VulkanInstance::GetDispatchLoader());
-        VkCommandBuffer.setBlendConstants(blendConstants);
+        if (renderingInfo.colorAttachmentCount > 0)
+        {
+            VkCommandBuffer.setColorBlendEnableEXT(0, colorBlendEnables, VulkanInstance::GetDispatchLoader());
+            VkCommandBuffer.setColorWriteMaskEXT(0, colorBlendComponentFlags, VulkanInstance::GetDispatchLoader());
+            VkCommandBuffer.setColorBlendEquationEXT(0, colorBlendEquations, VulkanInstance::GetDispatchLoader());
+            VkCommandBuffer.setBlendConstants(blendConstants);
+        }
         // Use default parameters to set more initial state
         SetDrawParameters();
         SetDepthParameters();

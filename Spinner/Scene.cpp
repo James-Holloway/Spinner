@@ -284,6 +284,7 @@ namespace Spinner
             auto meshComponent = sceneObject->AddComponent<Components::MeshComponent>();
             meshComponent->SetMeshBuffer(meshBuffer);
             meshComponent->SetShaderGroup(MeshData::StaticMeshVertex::ShaderGroup);
+            meshComponent->SetShadowShaderGroup(MeshData::StaticMeshVertex::ShadowShaderGroup);
             meshComponent->SetComponentName(meshName);
 
             if (meshInformation.MaterialIndex >= 0)
@@ -411,8 +412,7 @@ namespace Spinner
             if (!node.rotation.empty())
             {
                 auto rotation = glm::quat(static_cast<float>(node.rotation[3]), static_cast<float>(node.rotation[0]), static_cast<float>(node.rotation[1]), static_cast<float>(node.rotation[2]));
-                auto rotated = glm::quat(rotation.y, rotation.z, -rotation.w, -rotation.x);
-                sceneObject->SetLocalRotation(rotated);
+                sceneObject->SetLocalRotation(rotation);
             }
             if (!node.scale.empty())
             {

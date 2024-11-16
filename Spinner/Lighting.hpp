@@ -8,6 +8,7 @@
 
 namespace Spinner
 {
+    class DrawManager;
 
     namespace Components
     {
@@ -23,6 +24,8 @@ namespace Spinner
 
     class Lighting
     {
+        friend class DrawManager;
+
     public:
         using Pointer = std::shared_ptr<Lighting>;
 
@@ -38,7 +41,9 @@ namespace Spinner
         Buffer::Pointer LightInfoBuffer;
         Buffer::Pointer LightBuffer;
 
-        std::vector<Texture::Pointer> ShadowTextures;
+        std::vector<Components::LightComponent *> SortedLightComponents;
+        std::vector<Image::Pointer> ShadowImages;
+        Spinner::Sampler::Pointer ShadowSampler;
 
         const uint32_t MaxLightCount = 0;
         const uint32_t MaxShadowCount = 0;
@@ -52,7 +57,6 @@ namespace Spinner
         static std::vector<vk::DescriptorBindingFlags> GetDescriptorBindingFlags(uint32_t shadowCount = DefaultShadowCount);
         static Pointer CreateLighting(uint32_t lightCount = DefaultLightCount, uint32_t shadowCount = DefaultShadowCount);
     };
-
 } // Spinner
 
 #endif //SPINNER_LIGHTING_HPP

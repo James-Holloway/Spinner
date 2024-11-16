@@ -116,6 +116,8 @@ target_include_directories(SpinnerApp PUBLIC "${CMAKE_SOURCE_DIR}")
 compile_shaders(Spinner
         Shaders/staticmesh.vert
         Shaders/staticmesh.frag
+        Shaders/staticshadow.vert
+        Shaders/staticshadow.frag
 )
 
 # Asset Files (note: cannot be applied to OBJECT library)

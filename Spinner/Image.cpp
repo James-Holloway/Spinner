@@ -14,23 +14,24 @@
 
 namespace Spinner
 {
-    Image::Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : Image(vk::Extent3D{extent.width, extent.height, 1}, format, usageFlags, imageType, tiling, mipLevels, memoryUsage)
+    Image::Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage, uint32_t arrayLayers, vk::ImageCreateFlags imageCreateFlags) : Image(vk::Extent3D{extent.width, extent.height, 1}, format, usageFlags, imageType, tiling, mipLevels, memoryUsage, arrayLayers, imageCreateFlags)
     {
     }
 
-    Image::Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage) : ImageExtent(extent), Format(format), ImageUsageFlags(usageFlags), ImageType(imageType), ImageTiling(tiling)
+    Image::Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage, uint32_t arrayLayers, vk::ImageCreateFlags imageCreateFlags) : ImageExtent(extent), Format(format), ImageUsageFlags(usageFlags), ImageType(imageType), ImageTiling(tiling), ArrayLayers(arrayLayers), ImageCreateFlags(imageCreateFlags)
     {
         vk::ImageCreateInfo createInfo;
         createInfo.imageType = ImageType;
         createInfo.extent = extent;
         createInfo.tiling = tiling;
         createInfo.mipLevels = mipLevels;
-        createInfo.arrayLayers = 1;
+        createInfo.arrayLayers = arrayLayers;
         createInfo.format = Format;
         createInfo.initialLayout = CurrentImageLayout;
         createInfo.usage = usageFlags;
         createInfo.samples = vk::SampleCountFlagBits::e1;
         createInfo.sharingMode = vk::SharingMode::eExclusive;
+        createInfo.flags = ImageCreateFlags;
 
         vma::AllocationCreateInfo allocInfo;
         allocInfo.usage = memoryUsage;
@@ -196,6 +197,11 @@ namespace Spinner
     Image::Pointer Image::CreateImage3D(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageType imageType, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
     {
         return std::make_shared<Spinner::Image>(extent, format, usageFlags, imageType, tiling, mipLevels, memoryUsage);
+    }
+
+    Image::Pointer Image::CreateCubeImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags, vk::ImageTiling tiling, uint32_t mipLevels, vma::MemoryUsage memoryUsage)
+    {
+        return std::make_shared<Spinner::Image>(extent, format, usageFlags, vk::ImageType::e2D, tiling, mipLevels, memoryUsage, 6, vk::ImageCreateFlagBits::eCubeCompatible);
     }
 
     vk::ImageTiling Image::GetImageTiling() const noexcept

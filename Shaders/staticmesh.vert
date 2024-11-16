@@ -28,8 +28,9 @@ layout (location = 5) out vec3 outWorldPosition;
 void main()
 {
     // Position
-    gl_Position = viewProjection * model * vec4(inPosition, 1.0f);
-    outWorldPosition = (model * vec4(inPosition, 1.0f)).xyz;
+    vec4 worldPos = (model * vec4(inPosition, 1.0f));
+    gl_Position = viewProjection * worldPos;
+    outWorldPosition = worldPos.xyz;
 
     // TBN
     outNormal = normalize((model * vec4(inNormal, 0.0f)).xyz);

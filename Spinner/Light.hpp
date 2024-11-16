@@ -19,7 +19,7 @@ namespace Spinner
 
     struct Light
     {
-        // First 4 bits are LightType. None indicates invalid light
+        // First 3 bits are LightType. None indicates invalid light
         // Followed by bitflags of IsShadowCaster(8)
         uint32_t Flags = 0u;
         // Color, strength applied in light component. Not vec3 due to alignment issues

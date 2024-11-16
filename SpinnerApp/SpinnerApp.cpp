@@ -63,6 +63,9 @@ void SpinnerApp::AppRender(Spinner::CommandBuffer::Pointer &commandBuffer, uint3
         throw std::runtime_error("Cannot draw scene without DepthImage existing");
     }
 
+    // Shadows
+    DrawManagers[currentFrame]->RenderShadows(commandBuffer);
+
     auto swapchainImage = Graphics->Swapchain->GetImage(imageIndex);
     auto swapchainImageView = Graphics->Swapchain->GetImageView(imageIndex);
     auto depthImageView = DepthImage->GetMainImageView();
@@ -267,9 +270,8 @@ void SpinnerApp::AppImGui()
             ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
 
             Scene->RenderHierarchy();
-
-            ImGui::End();
         }
+        ImGui::End();
 
         if (ImGui::Begin("Properties", &ViewDebugUI, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
         {
@@ -277,9 +279,8 @@ void SpinnerApp::AppImGui()
             ImGui::SetWindowSize(ImVec2(350.0f, extentImGui.y));
 
             Scene->RenderSelectedProperties();
-
-            ImGui::End();
         }
+        ImGui::End();
     }
 }
 

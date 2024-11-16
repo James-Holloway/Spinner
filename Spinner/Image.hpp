@@ -9,7 +9,6 @@
 namespace Spinner
 {
     class CommandBuffer;
-
     class Buffer;
 
     class Image : public std::enable_shared_from_this<Image>
@@ -21,8 +20,8 @@ namespace Spinner
     public:
         using Pointer = std::shared_ptr<Image>;
 
-        Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
-        Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e3D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        Image(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly, uint32_t arrayLayers = 1, vk::ImageCreateFlags imageCreateFlags = {});
+        Image(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e3D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly, uint32_t arrayLayers = 1, vk::ImageCreateFlags imageCreateFlags = {});
         virtual ~Image();
 
     public:
@@ -59,6 +58,8 @@ namespace Spinner
         vk::ImageUsageFlags ImageUsageFlags;
         vk::ImageType ImageType;
         vk::ImageTiling ImageTiling;
+        uint32_t ArrayLayers;
+        vk::ImageCreateFlags ImageCreateFlags;
 
         vk::ImageLayout CurrentImageLayout = vk::ImageLayout::eUndefined;
 
@@ -67,6 +68,7 @@ namespace Spinner
     public:
         static Pointer CreateImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e2D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
         static Pointer CreateImage3D(vk::Extent3D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageType imageType = vk::ImageType::e3D, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
+        static Pointer CreateCubeImage(vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, vk::ImageTiling tiling = vk::ImageTiling::eOptimal, uint32_t mipLevels = 1, vma::MemoryUsage memoryUsage = vma::MemoryUsage::eGpuOnly);
         static std::vector<uint8_t> DecodeEmbeddedImageData(const std::vector<uint8_t> &data, int &width, int &height, int &channels, bool &is16Bit);
         static Pointer LoadFromEmbeddedImageData(const std::vector<uint8_t> &data, int mipLevels = 1);
         static Pointer LoadFromTextureFile(const std::string &textureFilename, uint32_t mipLevels = 1);

@@ -32,6 +32,7 @@ namespace Spinner
         void SetScene(const std::shared_ptr<Spinner::Scene> &scene);
         void Update(const Components::ComponentPtr<Components::CameraComponent> &cameraComponent);
         void Render(CommandBuffer::Pointer &commandBuffer);
+        void RenderShadows(CommandBuffer::Pointer& commandBuffer) const;
     };
 }
 

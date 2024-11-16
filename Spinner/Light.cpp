@@ -27,13 +27,10 @@ namespace Spinner
 
     void Light::SetIsShadowCaster(bool isShadowCaster)
     {
+        Flags &= ~LightFlags_ShadowCaster;
         if (isShadowCaster)
         {
             Flags |= LightFlags_ShadowCaster;
-        }
-        else
-        {
-            Flags &= ~LightFlags_ShadowCaster;
         }
     }
 

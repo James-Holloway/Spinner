@@ -10,7 +10,7 @@ namespace Spinner
     DrawManager::DrawManager()
     {
         SceneBuffer = Buffer::CreateBuffer(sizeof(SceneConstants), vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst, vma::MemoryUsage::eCpuToGpu, 0, true);
-        DescriptorPool = Spinner::DescriptorPool::CreateDefault();
+        DescriptorPool = Spinner::DescriptorPool::CreateDefault(4000);
     }
 
     DrawManager::~DrawManager()
@@ -51,7 +51,32 @@ namespace Spinner
 
         const auto lighting = scene->GetLighting();
 
-        // Update mesh constants
+
+        // Get active light components
+        scene->GetObjectTree()->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
+        {
+            auto lightComponents = sceneObject->GetComponentRawPointers<Components::LightComponent>();
+            for (auto &lightComponent : lightComponents)
+            {
+                if (lightComponent->GetActive())
+                {
+                    activeLightComponents.push_back(lightComponent);
+                }
+            }
+
+            return true;
+        }, nullptr);
+
+        if (lighting != nullptr)
+        {
+            const glm::vec3 viewerPosition = LocalSceneBuffer.CameraPosition;
+
+            lighting->UpdateLights(viewerPosition, activeLightComponents);
+
+            // TODO render using a new DrawCommand, the mesh component's ShadowShaderGroup, and the light component's shadow texture
+        }
+
+        // Create draw commands
         auto currentFrame = Graphics::GetCurrentFrame();
         scene->GetObjectTree()->TraverseActive([&](const SceneObject::Pointer &sceneObject) -> bool
         {
@@ -66,7 +91,7 @@ namespace Spinner
                 meshConstants.Model = sceneObject->GetWorldMatrix();
                 meshComponent->UpdateConstantBuffer(meshConstants);
 
-                // Create draw command
+                // Create main draw command
                 auto drawCommand = CreateDrawCommand(meshComponent->GetShaderGroup());
                 drawCommand->UseSceneBuffer(SceneBuffer);
                 drawCommand->UseLighting(lighting);
@@ -76,25 +101,8 @@ namespace Spinner
                 DrawCommands.emplace(drawCommand->GetPass(), drawCommand);
             }
 
-            // Get active light components
-            auto lightComponents = sceneObject->GetComponentRawPointers<Components::LightComponent>();
-            for (auto &lightComponent : lightComponents)
-            {
-                if (lightComponent->GetActive())
-                {
-                    activeLightComponents.push_back(lightComponent);
-                }
-            }
-
             return true;
         });
-
-        if (lighting != nullptr)
-        {
-            const glm::vec3 viewerPosition = LocalSceneBuffer.CameraPosition;
-
-            lighting->UpdateLights(viewerPosition, activeLightComponents);
-        }
     }
 
     void DrawManager::Render(CommandBuffer::Pointer &commandBuffer)
@@ -110,7 +118,35 @@ namespace Spinner
         {
             drawCommand->DrawMesh(commandBuffer);
         }
+    }
 
-        // TODO transparent pass
+    void DrawManager::RenderShadows(CommandBuffer::Pointer &commandBuffer) const
+    {
+        auto scene = Scene.lock();
+        if (scene == nullptr || !scene->IsActive())
+        {
+            return;
+        }
+
+        const auto lighting = scene->GetLighting();
+        if (lighting == nullptr)
+        {
+            return;
+        }
+
+        // Track the tracked shadow images
+        for (const auto &si : lighting->ShadowImages)
+        {
+            commandBuffer->TrackObject(si);
+        }
+
+        commandBuffer->TrackObject(lighting->ShadowSampler);
+        commandBuffer->TrackObject(lighting->LightBuffer);
+        commandBuffer->TrackObject(lighting->LightInfoBuffer);
+
+        for (auto &lightComponent : lighting->SortedLightComponents)
+        {
+            lightComponent->RenderShadow(commandBuffer, DescriptorPool);
+        }
     }
 }

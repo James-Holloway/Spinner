@@ -42,8 +42,8 @@ layout(set = LIGHT_DESCRIPTOR_SET, binding = 1) readonly buffer LightBuffer
     Light lights[];
 } lightBuffer;
 
-layout(set = LIGHT_DESCRIPTOR_SET, binding = 2) uniform sampler2D ShadowTextures[];
-layout(set = LIGHT_DESCRIPTOR_SET, binding = 2) uniform samplerCube ShadowCubeTextures[];
+layout(set = LIGHT_DESCRIPTOR_SET, binding = 2) uniform sampler2DShadow ShadowTextures[];
+layout(set = LIGHT_DESCRIPTOR_SET, binding = 2) uniform samplerCubeShadow ShadowCubeTextures[];
 
 #endif// !NO_LIGHT_DESCRIPTORS
 
@@ -59,29 +59,39 @@ uint GetLightType(uint lightFlags)
 
 float CalculateSpotCone(vec3 spotDirection, vec3 lightDirection, float innerSpotAngle, float outerSpotAngle)
 {
-    float theta = dot(lightDirection, normalize(-spotDirection));
+    float theta = dot(lightDirection, normalize(spotDirection));
     float epsilon = max(outerSpotAngle - innerSpotAngle, 0.0f);
     return clamp((theta - cos(outerSpotAngle)) / epsilon, 0.0f, 1.0f);
 }
 
 // Returns lit color
-vec3 CalculateLight(Light light, vec3 worldPos, vec3 V, vec3 N, float metallic, float roughness, vec3 materialColor)
+vec3 CalculateLight(int lightNum, vec3 worldPos, vec3 V, vec3 N, float metallic, float roughness, vec3 materialColor)
 {
+    const float maxBias = 1e-4;
+    const float minBias = 5e-5;
+    const float directionalMaxBias = 1e-2;
+    const float directionalMinBias = 5e-3;
+
+    Light light = lightBuffer.lights[lightNum];
+
     vec3 L;
     uint lightType = GetLightType(light.flags);
     float attenuation = 1.0f;
+    float shadowBias = 0.0;
 
     if (lightType != LightType_Directional)
     {
-        L = normalize(light.position.xyz - worldPos.xyz);
-
         vec3 lightWorldDiff = light.position.xyz - worldPos.xyz;
+        L = normalize(lightWorldDiff);
         float lightDistanceSquared = (lightWorldDiff.x * lightWorldDiff.x) + (lightWorldDiff.y * lightWorldDiff.y) + (lightWorldDiff.z * lightWorldDiff.z);
         attenuation = 1.0f / lightDistanceSquared;
+
+        shadowBias = max(maxBias * (1.0 - dot(N, L)), minBias);
     }
     else // Directional lighting
     {
-        L = normalize(-light.direction.xyz);
+        L = normalize(light.direction.xyz);
+        shadowBias = max(directionalMaxBias * (1.0 - dot(N, L)), directionalMinBias);
     }
 
     vec3 lightColor = vec3(light.red, light.green, light.blue);
@@ -93,6 +103,36 @@ vec3 CalculateLight(Light light, vec3 worldPos, vec3 V, vec3 N, float metallic, 
         outColor *= CalculateSpotCone(light.direction.xyz, L.xyz, light.extraData.x, light.extraData.y);
     }
 
+    // Shadow
+    bool isShadowCaster = (light.flags & LightFlags_ShadowCaster) != 0;
+    if (lightNum < lightInfo.shadowCount && isShadowCaster)
+    {
+        float shadowFactor = 1.0;
+
+        if (lightType == LightType_Point)
+        {
+            // Cubemap shadow map (TODO)
+            // float dist = distance(light.position.xyz, worldPos.xyz);
+            // shadowFactor = texture(ShadowCubeTextures[lightNum], vec4(L.xyz, dist));
+        }
+        else // Standard shadow map
+        {
+            vec4 shadowPos = light.shadowMatrix * vec4(worldPos, 1.0);
+            shadowPos.xyz /= shadowPos.w;
+            shadowPos.xy = shadowPos.xy * 0.5 + 0.5;
+            shadowPos.z -= shadowBias;
+
+            // Only apply shadowing when shadowPos is in range
+            if (shadowPos.x >= 0.0 && shadowPos.x <= 1.0 && shadowPos.y >= 0.0 && shadowPos.y <= 1.0)
+            {
+                shadowFactor = texture(ShadowTextures[lightNum], shadowPos.xyz).x;
+            }
+        }
+
+        // Apply shadow factor
+        outColor = mix(outColor * 0.00125, outColor, shadowFactor);
+    }
+
     return outColor;
 }
 
@@ -102,7 +142,7 @@ vec3 CalculateLighting(vec3 worldPos, vec3 V, vec3 N, float metallic, float roug
     vec3 Lo = vec3(0.0f);
     for (int l = 0; l < lightInfo.lightCount; l++)
     {
-        Lo += CalculateLight(lightBuffer.lights[l], worldPos, V, N, metallic, roughness, materialColor);
+        Lo += CalculateLight(l, worldPos, V, N, metallic, roughness, materialColor);
     }
 
     vec3 color = materialColor * (PBR_AMBIENT_LIGHT);
