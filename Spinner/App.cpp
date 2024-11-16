@@ -3,6 +3,8 @@
 #include <iostream>
 #include <chrono>
 
+#include "ScopedTimer.hpp"
+
 namespace Spinner
 {
     App::App(const std::string &appName, unsigned int appVersion)
@@ -15,6 +17,10 @@ namespace Spinner
         constexpr bool debug = true;
 #endif
         constexpr unsigned int vulkanVersion = vk::ApiVersion13;
+
+        ScopedTimer::Print = debug;
+
+        ScopedTimer timer("App Creation");
 
         VulkanInstance::CreateInstance(appName, vulkanVersion, appVersion, debug, {}, {});
 
@@ -51,7 +57,12 @@ namespace Spinner
     {
         try
         {
-            AppInit();
+            {
+                ScopedTimer timer("AppInit");
+                AppInit();
+            }
+
+            ScopedTimer::Print = false;
 
             auto input = Graphics::GetInput();
             auto lastTime = std::chrono::high_resolution_clock::now();

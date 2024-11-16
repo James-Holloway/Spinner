@@ -101,6 +101,7 @@ add_library(Spinner OBJECT
         Spinner/DrawCommand.cpp
         Spinner/DrawCommand.hpp
         Spinner/Passes.hpp
+        Spinner/ScopedTimer.hpp
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 
