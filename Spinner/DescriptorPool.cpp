@@ -6,11 +6,11 @@
 
 namespace Spinner
 {
-    DescriptorPool::DescriptorPool(const std::vector<vk::DescriptorPoolSize> &sizes, uint32_t maxSets) : Sizes(sizes), MaxSets(maxSets)
+    DescriptorPool::DescriptorPool(const std::vector<vk::DescriptorPoolSize> &sizes, uint32_t maxSets, vk::DescriptorPoolCreateFlags flags) : Sizes(sizes), MaxSets(maxSets), Flags(flags)
     {
         // Descriptor pool
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo;
-        descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+        descriptorPoolCreateInfo.flags = Flags;
         descriptorPoolCreateInfo.setMaxSets(MaxSets);
         descriptorPoolCreateInfo.setPoolSizes(Sizes);
         VkDescriptorPool = Graphics::GetDevice().createDescriptorPool(descriptorPoolCreateInfo);
@@ -25,26 +25,26 @@ namespace Spinner
         }
     }
 
-    DescriptorPool::Pointer DescriptorPool::CreateDefault(uint32_t poolSize)
+    DescriptorPool::Pointer DescriptorPool::CreateDefault(uint32_t poolSize, vk::DescriptorPoolCreateFlags flags)
     {
         uint32_t DefaultPoolSize = poolSize * MAX_FRAMES_IN_FLIGHT;
         uint32_t DefaultMaxSets = poolSize;
 
         static std::vector<vk::DescriptorPoolSize> sizes{
-                {vk::DescriptorType::eSampler,              DefaultPoolSize},
-                {vk::DescriptorType::eCombinedImageSampler, DefaultPoolSize},
-                {vk::DescriptorType::eSampledImage,         DefaultPoolSize},
-                {vk::DescriptorType::eStorageImage,         DefaultPoolSize},
-                {vk::DescriptorType::eUniformTexelBuffer,   DefaultPoolSize},
-                {vk::DescriptorType::eStorageTexelBuffer,   DefaultPoolSize},
-                {vk::DescriptorType::eUniformBuffer,        DefaultPoolSize},
-                {vk::DescriptorType::eUniformBufferDynamic, DefaultPoolSize},
-                {vk::DescriptorType::eStorageBuffer,        DefaultPoolSize},
-                {vk::DescriptorType::eStorageBufferDynamic, DefaultPoolSize},
-                {vk::DescriptorType::eInputAttachment,      DefaultPoolSize},
+            {vk::DescriptorType::eSampler, DefaultPoolSize},
+            {vk::DescriptorType::eCombinedImageSampler, DefaultPoolSize},
+            {vk::DescriptorType::eSampledImage, DefaultPoolSize},
+            {vk::DescriptorType::eStorageImage, DefaultPoolSize},
+            {vk::DescriptorType::eUniformTexelBuffer, DefaultPoolSize},
+            {vk::DescriptorType::eStorageTexelBuffer, DefaultPoolSize},
+            {vk::DescriptorType::eUniformBuffer, DefaultPoolSize},
+            {vk::DescriptorType::eUniformBufferDynamic, DefaultPoolSize},
+            {vk::DescriptorType::eStorageBuffer, DefaultPoolSize},
+            {vk::DescriptorType::eStorageBufferDynamic, DefaultPoolSize},
+            {vk::DescriptorType::eInputAttachment, DefaultPoolSize},
         };
 
-        return std::make_shared<Spinner::DescriptorPool>(sizes, DefaultMaxSets);
+        return std::make_shared<Spinner::DescriptorPool>(sizes, DefaultMaxSets, flags);
     }
 
     std::vector<vk::DescriptorSet> DescriptorPool::AllocateDescriptorSets(const std::shared_ptr<Shader> &shader) const

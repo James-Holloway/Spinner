@@ -7,7 +7,7 @@ namespace Spinner
 {
     ImGuiInstance::ImGuiInstance(const std::shared_ptr<Spinner::Graphics> &graphics)
     {
-        DescriptorPool = DescriptorPool::CreateDefault();
+        DescriptorPool = DescriptorPool::CreateDefault(1000, vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
