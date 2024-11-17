@@ -32,7 +32,6 @@ namespace Spinner
         virtual void AppRender(CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex) = 0;
         virtual void AppCleanup() = 0;
         virtual void AppUpdate() = 0;
-        virtual void AppImGui() = 0;
     };
 } // Spinner
 

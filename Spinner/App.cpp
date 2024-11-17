@@ -77,9 +77,6 @@ namespace Spinner
 
                 AppUpdate();
 
-                ImGuiInstance::StartFrame();
-                AppImGui();
-
                 Graphics->DrawFrame();
             }
         } catch (const std::exception &e)

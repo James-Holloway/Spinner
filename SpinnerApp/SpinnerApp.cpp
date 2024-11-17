@@ -164,6 +164,9 @@ void SpinnerApp::AppCleanup()
 
 void SpinnerApp::AppUpdate()
 {
+    ImGuiInstance::StartFrame();
+    AppImGui();
+
     DrawManagers[Graphics::GetCurrentFrame()]->Update(Camera);
 
     auto input = Graphics::GetInput();
@@ -280,6 +283,7 @@ void SpinnerApp::AppImGui()
 
             Scene->RenderSelectedProperties();
         }
+
         ImGui::End();
     }
 }

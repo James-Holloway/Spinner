@@ -32,7 +32,7 @@ protected:
     void AppRender(Spinner::CommandBuffer::Pointer &commandBuffer, uint32_t currentFrame, uint32_t imageIndex) override;
     void AppCleanup() override;
     void AppUpdate() override;
-    void AppImGui() override;
+    void AppImGui();
     void RecreateDepthImage();
 };
 
