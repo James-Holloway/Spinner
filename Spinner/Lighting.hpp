@@ -5,6 +5,7 @@
 #include "Light.hpp"
 #include "Buffer.hpp"
 #include "Texture.hpp"
+#include "VulkanInstance.hpp"
 
 namespace Spinner
 {
@@ -38,8 +39,8 @@ namespace Spinner
         void UpdateDescriptors(vk::DescriptorSet set, bool shadowsOnly = false);
 
     protected:
-        Buffer::Pointer LightInfoBuffer;
-        Buffer::Pointer LightBuffer;
+        std::array<Buffer::Pointer, MAX_FRAMES_IN_FLIGHT> LightInfoBuffers;
+        std::array<Buffer::Pointer, MAX_FRAMES_IN_FLIGHT> LightBuffers;
 
         std::vector<Components::LightComponent *> SortedLightComponents;
         std::vector<Image::Pointer> ShadowImages;

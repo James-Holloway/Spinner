@@ -140,9 +140,11 @@ namespace Spinner
             commandBuffer->TrackObject(si);
         }
 
+        const auto currentFrame = Graphics::GetCurrentFrame();
+
         commandBuffer->TrackObject(lighting->ShadowSampler);
-        commandBuffer->TrackObject(lighting->LightBuffer);
-        commandBuffer->TrackObject(lighting->LightInfoBuffer);
+        commandBuffer->TrackObject(lighting->LightBuffers[currentFrame]);
+        commandBuffer->TrackObject(lighting->LightInfoBuffers[currentFrame]);
 
         for (auto &lightComponent : lighting->SortedLightComponents)
         {
