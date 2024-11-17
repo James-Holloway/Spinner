@@ -524,6 +524,7 @@ namespace Spinner
         COMPONENT_RENDER_DEBUG_UI(MeshComponent);
         COMPONENT_RENDER_DEBUG_UI(CameraComponent);
         COMPONENT_RENDER_DEBUG_UI(LightComponent);
+        COMPONENT_RENDER_DEBUG_UI(CameraControllerComponent);
 
 #undef COMPONENT_RENDER_DEBUG_UI
 

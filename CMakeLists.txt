@@ -102,6 +102,8 @@ add_library(Spinner OBJECT
         Spinner/DrawCommand.hpp
         Spinner/Passes.hpp
         Spinner/ScopedTimer.hpp
+        Spinner/Components/CameraControllerComponent.cpp
+        Spinner/Components/CameraControllerComponent.hpp
 )
 target_link_libraries(Spinner PUBLIC Vulkan::Vulkan glfw glm::glm GPUOpen::VulkanMemoryAllocator tinygltf imgui)
 

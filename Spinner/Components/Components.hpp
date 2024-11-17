@@ -5,6 +5,7 @@
 #include "MeshComponent.hpp"
 #include "CameraComponent.hpp"
 #include "LightComponent.hpp"
+#include "CameraControllerComponent.hpp"
 
 #define SPINNER_COMPONENT_TEMPLATE_CASE(type, func) case GetComponentId<type>(): return func<type>();
 
@@ -17,6 +18,7 @@ namespace Spinner::Components
             SPINNER_COMPONENT_TEMPLATE_CASE(MeshComponent, GetComponentName);
             SPINNER_COMPONENT_TEMPLATE_CASE(CameraComponent, GetComponentName);
             SPINNER_COMPONENT_TEMPLATE_CASE(LightComponent, GetComponentName);
+            SPINNER_COMPONENT_TEMPLATE_CASE(CameraControllerComponent, GetComponentName);
 
             default:
                 return GetComponentName<Component>();
